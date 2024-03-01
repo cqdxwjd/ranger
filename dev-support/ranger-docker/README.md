@@ -37,7 +37,7 @@ Docker files in this folder create docker images and run them to build Apache Ra
 
 5. Execute following commands to set environment variables to build Apache Ranger docker containers:
    ~~~
-   export DOCKER_BUILDKIT=1
+   export DOCKER_MAVEN_BUILD=1
    export COMPOSE_DOCKER_CLI_BUILD=1
    export RANGER_DB_TYPE=postgres
    ~~~

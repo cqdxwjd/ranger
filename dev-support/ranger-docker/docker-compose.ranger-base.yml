@@ -13,6 +13,9 @@ services:
       - ranger
     environment:
       - RANGER_VERSION
+    dns:
+      - 8.8.8.8
+      - 114.114.114.114
 
 networks:
   ranger:
