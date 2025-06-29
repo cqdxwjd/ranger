@@ -21,6 +21,7 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Badge, Row, Col } from "react-bootstrap";
 import XATableLayout from "Components/XATableLayout";
+import { fetchApi } from "Utils/fetchAPI";
 import { AuthStatus, AuthType } from "../../utils/XAEnums";
 import AdminModal from "./AdminModal";
 import dateFormat from "dateformat";
@@ -33,11 +34,12 @@ import {
   getTableSortType,
   fetchSearchFilterParams,
   parseSearchFilter,
-  serverError
+  serverError,
+  currentTimeZone
 } from "../../utils/XAUtils";
 import { Loader } from "../../components/CommonComponents";
 
-function Login_Sessions() {
+function LoginSessions() {
   const [loginSessionListingData, setLoginSessionLogs] = useState([]);
   const [loader, setLoader] = useState(true);
   const [sessionId, setSessionId] = useState([]);
@@ -96,10 +98,10 @@ function Login_Sessions() {
           params["sortType"] = getTableSortType(sortBy);
         }
         try {
-          const { fetchApi, fetchCSRFConf } = await import("Utils/fetchAPI");
           logsResp = await fetchApi({
             url: "xusers/authSessions",
-            params: params
+            params: params,
+            skipNavigate: true
           });
           logs = logsResp.data.vXAuthSessions;
           totalCount = logsResp.data.totalCount;
@@ -176,7 +178,9 @@ function Login_Sessions() {
         Cell: (rawValue) => {
           if (rawValue.value) {
             return (
-              <span className="text-center d-block">{rawValue.value}</span>
+              <span className="text-center d-block text-truncate">
+                {rawValue.value}
+              </span>
             );
           } else {
             return <span className="text-center d-block">--</span>;
@@ -197,19 +201,19 @@ function Login_Sessions() {
               if (AuthStatus[item].value == 1) {
                 html = (
                   <span className="text-center d-block">
-                    <Badge variant="success">{label}</Badge>
+                    <Badge bg="success">{label}</Badge>
                   </span>
                 );
               } else if (AuthStatus[item].value == 2) {
                 html = (
                   <span className="text-center d-block">
-                    <Badge variant="danger">{label}</Badge>
+                    <Badge bg="danger">{label}</Badge>
                   </span>
                 );
               } else {
                 html = (
                   <span className="text-center d-block">
-                    <Badge variant="secondary">{label}</Badge>
+                    <Badge bg="secondary">{label}</Badge>
                   </span>
                 );
               }
@@ -270,7 +274,7 @@ function Login_Sessions() {
         disableSortBy: true
       },
       {
-        Header: "Login Time ( India Standard Time )",
+        Header: `Login Time ( ${currentTimeZone()} )`,
         accessor: "authTime",
         Cell: (rawValue) => {
           let formatDateTime = dateFormat(
@@ -410,4 +414,4 @@ function Login_Sessions() {
   );
 }
 
-export default Login_Sessions;
+export default LoginSessions;

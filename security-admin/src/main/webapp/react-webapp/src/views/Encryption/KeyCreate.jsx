@@ -30,7 +30,7 @@ import {
   scrollToError
 } from "../../components/CommonComponents";
 import { commonBreadcrumb, serverError } from "../../utils/XAUtils";
-import { find, isEmpty, values } from "lodash";
+import { cloneDeep, find, isEmpty, values } from "lodash";
 import withRouter from "Hooks/withRouter";
 import { useLocation, useNavigate } from "react-router-dom";
 import usePrompt from "Hooks/usePrompt";
@@ -75,7 +75,7 @@ function KeyCreate(props) {
   const [preventUnBlock, setPreventUnblock] = useState(false);
   const [blockUI, setBlockUI] = useState(false);
   const toastId = useRef(null);
-  const { allServiceDefs } = getServiceDef();
+  const { allServiceDefs } = cloneDeep(getServiceDef());
 
   useEffect(() => {
     fetchInitialData();
@@ -235,9 +235,7 @@ function KeyCreate(props) {
                 {({ input, meta }) => (
                   <Row className="form-group">
                     <Col xs={3}>
-                      <label className="form-label pull-right">
-                        Key Name *
-                      </label>
+                      <label className="form-label float-end">Key Name *</label>
                     </Col>
                     <Col xs={4}>
                       <input
@@ -264,7 +262,7 @@ function KeyCreate(props) {
                 {({ input }) => (
                   <Row className="form-group">
                     <Col xs={3}>
-                      <label className="form-label pull-right">Cipher</label>
+                      <label className="form-label float-end">Cipher</label>
                     </Col>
                     <Col xs={4}>
                       <input
@@ -283,7 +281,7 @@ function KeyCreate(props) {
                 {({ input }) => (
                   <Row className="form-group">
                     <Col xs={3}>
-                      <label className="form-label pull-right">Length</label>
+                      <label className="form-label float-end">Length</label>
                     </Col>
                     <Col xs={4}>
                       <input
@@ -301,7 +299,7 @@ function KeyCreate(props) {
                 {({ input }) => (
                   <Row className="form-group">
                     <Col xs={3}>
-                      <label className="form-label pull-right">
+                      <label className="form-label float-end">
                         Description
                       </label>
                     </Col>
@@ -317,7 +315,7 @@ function KeyCreate(props) {
               </Field>
               <Row className="form-group">
                 <Col xs={3}>
-                  <label className="form-label pull-right">Attributes</label>
+                  <label className="form-label float-end">Attributes</label>
                 </Col>
                 <Col xs={6}>
                   <Table bordered size="sm" className="no-bg-color w-75">
@@ -370,7 +368,7 @@ function KeyCreate(props) {
               </Row>
               <Row className="form-group">
                 <Col xs={3}>
-                  <label className="form-label pull-right"></label>
+                  <label className="form-label float-end"></label>
                 </Col>
                 <Col xs={6}>
                   <Button

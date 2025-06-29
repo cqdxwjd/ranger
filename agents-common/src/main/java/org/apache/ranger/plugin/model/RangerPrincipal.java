@@ -19,24 +19,23 @@
 
 package org.apache.ranger.plugin.model;
 
-import org.codehaus.jackson.annotate.JsonAutoDetect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.annotate.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.util.Objects;
 
-@JsonAutoDetect(fieldVisibility=JsonAutoDetect.Visibility.ANY)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_EMPTY)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class RangerPrincipal implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
-
-    public enum PrincipalType { USER, GROUP, ROLE }
 
     private PrincipalType type;
     private String        name;
@@ -94,4 +93,6 @@ public class RangerPrincipal implements java.io.Serializable {
     public String toString() {
         return "{type=" + type + ", name=" + name + "}";
     }
+
+    public enum PrincipalType { USER, GROUP, ROLE }
 }

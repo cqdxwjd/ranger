@@ -35,7 +35,8 @@ import {
   uniq
 } from "lodash";
 import { fetchApi } from "Utils/fetchAPI";
-import { serverError } from "../../utils/XAUtils";
+import { serverError } from "Utils/XAUtils";
+import { selectInputCustomStyles } from "Components/CommonComponents";
 
 class ImportPolicy extends Component {
   constructor(props) {
@@ -286,6 +287,7 @@ class ImportPolicy extends Component {
       label: service.name
     }));
   };
+
   Theme = (theme) => {
     return {
       ...theme,
@@ -295,7 +297,9 @@ class ImportPolicy extends Component {
       }
     };
   };
+
   CustomStyles = {
+    ...selectInputCustomStyles,
     option: (provided, state) => ({
       ...provided,
       color: state.isSelected ? "white" : "black"
@@ -333,7 +337,7 @@ class ImportPolicy extends Component {
               handleSubmit,
               values,
               form: {
-                mutators: { push: addItem, pop: removeItem }
+                mutators: { push: addItem }
               }
             }) => (
               <form onSubmit={handleSubmit}>
@@ -354,8 +358,8 @@ class ImportPolicy extends Component {
                   <Modal.Body>
                     <React.Fragment>
                       <Row>
-                        <Col sm={12}>
-                          <div className="form-row">
+                        <Row sm={12}>
+                          <Col sm={7}>
                             <Field name="uploadPolicyFile">
                               {({ input }) => (
                                 <div className="form-group col-sm-6">
@@ -376,21 +380,21 @@ class ImportPolicy extends Component {
                                 </div>
                               )}
                             </Field>
-                            <div className="form-group col-sm-6 text-center">
-                              <div className="form-check">
-                                <Field
-                                  name="isOverride"
-                                  component="input"
-                                  type="checkbox"
-                                  className="form-check-input"
-                                />
-                                <label className="form-check-label">
-                                  Override Policy
-                                </label>
-                              </div>
+                          </Col>
+                          <Col sm={5}>
+                            <div className="form-check">
+                              <Field
+                                name="isOverride"
+                                component="input"
+                                type="checkbox"
+                                className="form-check-input"
+                              />
+                              <label className="form-check-label">
+                                Override Policy
+                              </label>
                             </div>
-                          </div>
-                        </Col>
+                          </Col>
+                        </Row>
                         <Col sm={12}>
                           {this.state.fileName ? (
                             <span>
@@ -403,7 +407,7 @@ class ImportPolicy extends Component {
                               ></label>
                             </span>
                           ) : (
-                            <span className="ml-1">No File Chosen</span>
+                            <span className="ms-1">No File Chosen</span>
                           )}
                         </Col>
                         <Col sm={12}>
@@ -432,7 +436,7 @@ class ImportPolicy extends Component {
                             </Row>
                             <Row>
                               <Col sm={12}>
-                                <p className="font-weight-bold">
+                                <p className="fw-bold">
                                   Specify Zone Mapping :
                                 </p>
                               </Col>
@@ -485,7 +489,7 @@ class ImportPolicy extends Component {
                             <hr />
                             <Row>
                               <Col sm={12}>
-                                <p className="font-weight-bold">
+                                <p className="fw-bold">
                                   Specify Service Mapping :
                                 </p>
                               </Col>

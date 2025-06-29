@@ -17,23 +17,13 @@
  * under the License.
  */
 
-import React, { useEffect, useReducer, useState } from "react";
+import React, { useReducer } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import {
-  sortBy,
-  capitalize,
-  filter,
-  isEmpty,
-  map,
-  uniq,
-  upperCase,
-  groupBy
-} from "lodash";
+import { sortBy, filter, isEmpty, map, upperCase, groupBy } from "lodash";
 import closeIcon from "Images/close.svg";
-import { RangerPolicyType } from "../../utils/XAEnums";
 import { getUserProfile, setUserProfile } from "Utils/appState";
 import { fetchApi } from "Utils/fetchAPI";
-import Select, { components } from "react-select";
+import Select from "react-select";
 import {
   hasAccessToTab,
   isAuditor,
@@ -42,9 +32,7 @@ import {
   getBaseUrl,
   isKMSAuditor
 } from "Utils/XAUtils";
-import { getServiceDef } from "../../utils/appState";
 import ResourceTagContent from "./ResourceTagContent";
-import { Button } from "react-bootstrap";
 import { toast } from "react-toastify";
 
 function reducer(state, action) {
@@ -143,7 +131,6 @@ export const SideBarBody = (props) => {
     if (value.length !== 0) {
       let selectedServiceDefs = [];
       let selectedService = [];
-      let filterSelectedService = [];
 
       value.map((serviceDef) => {
         allServicesDefData?.filter((servicedefs) => {
@@ -160,18 +147,6 @@ export const SideBarBody = (props) => {
           }
         });
       });
-
-      if (isKMSRole) {
-        filterSelectedService = filter(
-          selectedService,
-          (service) => service.type == "kms"
-        );
-      } else {
-        filterSelectedService = filter(
-          selectedService,
-          (service) => service.type !== "tag" && service.type !== "kms"
-        );
-      }
 
       sideBarDispatch({
         type: "SERVICEDEF_DATA",
@@ -193,10 +168,7 @@ export const SideBarBody = (props) => {
     if (value.length == 0) {
       let filterSelectedService = [];
       if (isKMSRole) {
-        filterSelectedService = filter(
-          allServicesData,
-          (service) => service.type == "kms"
-        );
+        filterSelectedService = filter(allServicesData, ["type", "kms"]);
       } else {
         filterSelectedService = filter(
           allServicesData,
@@ -255,9 +227,8 @@ export const SideBarBody = (props) => {
   };
 
   const handleLogout = async (checkKnoxSSOVal) => {
-    let logoutResp = {};
     try {
-      logoutResp = await fetchApi({
+      await fetchApi({
         url: "logout",
         baseURL: "",
         headers: {
@@ -694,6 +665,7 @@ export const SideBarBody = (props) => {
                     props.closeCollapse();
                     localStorage.clear();
                   }}
+                  className="text-decoration-none"
                 >
                   Backbone Classic UI
                 </a>
@@ -701,16 +673,22 @@ export const SideBarBody = (props) => {
               <li className="list-group-item">
                 <a
                   href={apiUrl}
+                  rel="noreferrer"
                   target="_blank"
                   onClick={() => {
                     props.closeCollapse();
                   }}
+                  className="text-decoration-none"
                 >
                   API Documentation
                 </a>
               </li>
               <li className="list-group-item">
-                <NavLink onClick={checkKnoxSSO} to="#">
+                <NavLink
+                  onClick={checkKnoxSSO}
+                  to="#"
+                  className="text-decoration-none"
+                >
                   Log Out
                 </NavLink>
               </li>

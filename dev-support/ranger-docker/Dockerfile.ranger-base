@@ -19,6 +19,7 @@ FROM ubuntu:${UBUNTU_VERSION}
 
 ARG TARGETARCH
 ARG RANGER_BASE_JAVA_VERSION
+ENV OS_NAME=UBUNTU
 
 # Install tzdata, Python, Java, python-requests
 RUN sed -i 's/http:\/\/ports.ubuntu.com\/ubuntu-ports\//http:\/\/mirrors.aliyun.com\/ubuntu-ports\//' /etc/apt/sources.list
@@ -29,11 +30,11 @@ RUN apt-get update && \
     pip3 install requests
 
 # Set environment variables
-ENV JAVA_HOME      /usr/lib/jvm/java-${RANGER_BASE_JAVA_VERSION}-openjdk-${TARGETARCH}
-ENV RANGER_DIST    /home/ranger/dist
-ENV RANGER_SCRIPTS /home/ranger/scripts
-ENV RANGER_HOME    /opt/ranger
-ENV PATH           /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV JAVA_HOME=/usr/lib/jvm/java-${RANGER_BASE_JAVA_VERSION}-openjdk-${TARGETARCH}
+ENV RANGER_DIST=/home/ranger/dist
+ENV RANGER_SCRIPTS=/home/ranger/scripts
+ENV RANGER_HOME=/opt/ranger
+ENV PATH=/usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 RUN update-java-alternatives --set /usr/lib/jvm/java-1.${RANGER_BASE_JAVA_VERSION}.0-openjdk-${TARGETARCH}
 
@@ -50,11 +51,13 @@ RUN groupadd ranger && \
     useradd -g hadoop -ms /bin/bash hive && \
     useradd -g hadoop -ms /bin/bash hbase && \
     useradd -g hadoop -ms /bin/bash kafka && \
+    useradd -g hadoop -ms /bin/bash ozone && \
     groupadd knox && \
     useradd -g knox -ms /bin/bash knox && \
     mkdir -p /home/ranger/dist && \
     mkdir -p /home/ranger/scripts && \
     chown -R ranger:ranger /home/ranger && \
+    chmod +rx /home/ranger /home/ranger/dist /home/ranger/scripts && \
     mkdir -p /opt/ranger && \
     chown -R ranger:ranger /opt/ranger
 

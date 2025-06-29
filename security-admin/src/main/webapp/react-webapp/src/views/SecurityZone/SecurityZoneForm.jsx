@@ -30,25 +30,28 @@ import {
   isEmpty,
   pickBy,
   find,
+  filter,
   maxBy,
   sortBy,
-  map
+  map,
+  cloneDeep
 } from "lodash";
 import { Table } from "react-bootstrap";
 import { FieldArray } from "react-final-form-arrays";
 import arrayMutators from "final-form-arrays";
-import ModalResourceComp from "../Resources/ModalResourceComp";
+import ModalResourceComp from "Views/Resources/ModalResourceComp";
 import { RegexValidation } from "Utils/XAEnums";
 import { toast } from "react-toastify";
-import { commonBreadcrumb, serverError } from "../../utils/XAUtils";
+import { commonBreadcrumb, serverError } from "Utils/XAUtils";
 import {
   BlockUi,
   Loader,
   scrollToError,
-  selectCustomStyles
-} from "../../components/CommonComponents";
+  selectInputCustomStyles,
+  selectInputCustomErrorStyles
+} from "Components/CommonComponents";
 import usePrompt from "Hooks/usePrompt";
-import { getServiceDef } from "../../utils/appState";
+import { getServiceDef } from "Utils/appState";
 
 const noneOptions = {
   label: "None",
@@ -65,7 +68,7 @@ const SecurityZoneForm = () => {
   const navigate = useNavigate();
   const params = useParams();
   const toastId = useRef(null);
-  const { allServiceDefs } = getServiceDef();
+  const { allServiceDefs } = cloneDeep(getServiceDef());
   const [services, setServices] = useState([]);
   const [zone, setZone] = useState({});
   const [resourceServiceDef, setResourceServiceDef] = useState({});
@@ -167,11 +170,12 @@ const SecurityZoneForm = () => {
   };
 
   const fetchResourceServices = async () => {
-    const serviceDefnsResp = await fetchApi({
-      url: "plugins/services"
+    const servicesResp = await fetchApi({
+      url: "public/v2/api/service-headers"
     });
 
-    const filterServices = serviceDefnsResp.data.services.filter(
+    const filterServices = filter(
+      servicesResp?.data,
       (obj) => obj.type !== "tag" && obj.type !== "kms"
     );
 
@@ -183,7 +187,7 @@ const SecurityZoneForm = () => {
 
     for (let key of Object.keys(servicesByType)) {
       resourceServices.push({
-        label: <span className="font-weight-bold text-body h6">{key}</span>,
+        label: <span className="fw-bold text-body h6">{key}</span>,
         options: servicesByType[key].map((name) => {
           return { label: name.name, value: name.name };
         })
@@ -587,18 +591,18 @@ const SecurityZoneForm = () => {
   };
 
   const fetchTagServices = async (inputValue) => {
-    let params = {};
-    if (inputValue) {
-      params["serviceNamePartial"] = inputValue || "";
-      params["serviceType"] = "tag" || "";
-    }
+    const params = {
+      ...(inputValue && { serviceNamePrefix: inputValue }),
+      serviceType: "tag"
+    };
+
     const serviceResp = await fetchApi({
-      url: "plugins/services",
+      url: "public/v2/api/service-headers",
       params: params
     });
-    const filterServices = serviceResp.data.services.filter(
-      (obj) => obj.type == "tag"
-    );
+
+    const filterServices = filter(serviceResp?.data || [], ["type", "tag"]);
+
     return filterServices.map(({ name }) => ({
       label: name,
       value: name
@@ -784,7 +788,7 @@ const SecurityZoneForm = () => {
                       {({ input, meta }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Zone Name *
                             </label>
                           </Col>
@@ -816,7 +820,7 @@ const SecurityZoneForm = () => {
                       {({ input }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Zone Description
                             </label>
                           </Col>
@@ -837,7 +841,7 @@ const SecurityZoneForm = () => {
                       render={({ input, meta }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Admin Users
                             </label>
                           </Col>
@@ -846,8 +850,8 @@ const SecurityZoneForm = () => {
                               {...input}
                               styles={
                                 meta.error && meta.touched
-                                  ? selectCustomStyles
-                                  : ""
+                                  ? selectInputCustomErrorStyles
+                                  : selectInputCustomStyles
                               }
                               id={
                                 meta.error && meta.touched
@@ -881,23 +885,23 @@ const SecurityZoneForm = () => {
                       render={({ input, meta }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Admin Usergroups
                             </label>
                           </Col>
                           <Col xs={4}>
                             <AsyncSelect
+                              {...input}
                               styles={
                                 meta.error && meta.touched
-                                  ? selectCustomStyles
-                                  : ""
+                                  ? selectInputCustomErrorStyles
+                                  : selectInputCustomStyles
                               }
                               id={
                                 meta.error && meta.touched
                                   ? "isError"
                                   : "adminUserGroups"
                               }
-                              {...input}
                               cacheOptions
                               loadOptions={fetchGroupsData}
                               onFocus={() => {
@@ -925,7 +929,7 @@ const SecurityZoneForm = () => {
                       render={({ input, meta }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Admin Roles
                             </label>
                           </Col>
@@ -934,8 +938,8 @@ const SecurityZoneForm = () => {
                               {...input}
                               styles={
                                 meta.error && meta.touched
-                                  ? selectCustomStyles
-                                  : ""
+                                  ? selectInputCustomErrorStyles
+                                  : selectInputCustomStyles
                               }
                               id={
                                 meta.error && meta.touched
@@ -974,7 +978,7 @@ const SecurityZoneForm = () => {
                       render={({ input, meta }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Auditor Users
                             </label>
                           </Col>
@@ -983,8 +987,8 @@ const SecurityZoneForm = () => {
                               {...input}
                               styles={
                                 meta.error && meta.touched
-                                  ? selectCustomStyles
-                                  : ""
+                                  ? selectInputCustomErrorStyles
+                                  : selectInputCustomStyles
                               }
                               id={
                                 meta.error && meta.touched
@@ -1018,7 +1022,7 @@ const SecurityZoneForm = () => {
                       render={({ input, meta }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Auditor Usergroups
                             </label>
                           </Col>
@@ -1027,8 +1031,8 @@ const SecurityZoneForm = () => {
                               {...input}
                               styles={
                                 meta.error && meta.touched
-                                  ? selectCustomStyles
-                                  : ""
+                                  ? selectInputCustomErrorStyles
+                                  : selectInputCustomStyles
                               }
                               id={
                                 meta.error && meta.touched
@@ -1062,7 +1066,7 @@ const SecurityZoneForm = () => {
                       render={({ input, meta }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Auditor Roles
                             </label>
                           </Col>
@@ -1071,8 +1075,8 @@ const SecurityZoneForm = () => {
                               {...input}
                               styles={
                                 meta.error && meta.touched
-                                  ? selectCustomStyles
-                                  : ""
+                                  ? selectInputCustomErrorStyles
+                                  : selectInputCustomStyles
                               }
                               id={
                                 meta.error && meta.touched
@@ -1112,7 +1116,7 @@ const SecurityZoneForm = () => {
                       render={({ input }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Select Tag Services
                             </label>
                           </Col>
@@ -1135,6 +1139,7 @@ const SecurityZoneForm = () => {
                               }}
                               isClearable={true}
                               placeholder="Select Tag Services"
+                              styles={selectInputCustomStyles}
                             />
                           </Col>
                         </Row>
@@ -1146,7 +1151,7 @@ const SecurityZoneForm = () => {
                       render={({ input }) => (
                         <Row className="form-group">
                           <Col xs={3}>
-                            <label className="form-label pull-right">
+                            <label className="form-label float-end">
                               Select Resource Services
                             </label>
                           </Col>
@@ -1171,13 +1176,14 @@ const SecurityZoneForm = () => {
                               isClearable={false}
                               isSearchable={true}
                               placeholder="Select Service Name"
+                              styles={selectInputCustomStyles}
                             />
                           </Col>
                         </Row>
                       )}
                     />
 
-                    <Table striped bordered>
+                    <Table bordered>
                       <thead>
                         <tr>
                           <th className="p-3 mb-2 bg-white text-dark  align-middle text-center">

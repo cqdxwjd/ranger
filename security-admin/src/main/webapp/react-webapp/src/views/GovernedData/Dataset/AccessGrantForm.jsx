@@ -310,8 +310,8 @@ function AccessGrantForm({
               obj.type == "USER"
                 ? userGreyIcon
                 : obj.type == "GROUP"
-                ? groupGreyIcon
-                : roleGreyIcon
+                  ? groupGreyIcon
+                  : roleGreyIcon
             }
             height="20px"
             width="20px"
@@ -467,7 +467,7 @@ function AccessGrantForm({
               initialValues
             }) => {
               return (
-                <div className="gds-access-content">
+                <div className="gds-access-content gds-content-border">
                   <FormChange
                     isDirtyField={
                       dirty == true || !isEqual(initialValues, values)

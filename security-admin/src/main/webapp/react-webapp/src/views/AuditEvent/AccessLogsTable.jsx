@@ -23,7 +23,6 @@ import dateFormat from "dateformat";
 import { isEmpty } from "lodash";
 import { toast } from "react-toastify";
 import {
-  ServiceType,
   ServiceRequestDataRangerAcl,
   ServiceRequestDataHadoopAcl
 } from "../../utils/XAEnums";
@@ -53,6 +52,7 @@ export const AccessLogsTable = ({ data = {} }) => {
     zoneName,
     requestData,
     tags,
+    userSource,
     datasets,
     projects
   } = data;
@@ -94,6 +94,10 @@ export const AccessLogsTable = ({ data = {} }) => {
           <td>{!isEmpty(requestUser) ? requestUser : "--"}</td>
         </tr>
         <tr>
+          <td>User Source</td>
+          <td>{!isEmpty(userSource) ? userSource : "--"}</td>
+        </tr>
+        <tr>
           <td>Service Name </td>
           <td>{!isEmpty(repoName) ? repoName : "--"}</td>
         </tr>
@@ -120,7 +124,7 @@ export const AccessLogsTable = ({ data = {} }) => {
                 {!isEmpty(requestData) ? (
                   <>
                     <Button
-                      className="pull-right link-tag query-icon btn btn-sm"
+                      className="float-end link-tag query-icon btn btn-sm"
                       size="sm"
                       variant="link"
                       title="Copy"
@@ -147,7 +151,7 @@ export const AccessLogsTable = ({ data = {} }) => {
                 {!isEmpty(requestData) ? (
                   <>
                     <Button
-                      className="pull-right link-tag query-icon btn btn-sm"
+                      className="float-end link-tag query-icon btn btn-sm"
                       size="sm"
                       variant="link"
                       title="Copy"
@@ -184,11 +188,11 @@ export const AccessLogsTable = ({ data = {} }) => {
           </td>
         </tr>
         <tr>
-          <td className="text-nowrap">Access Enforcer</td>
+          <td>Access Enforcer</td>
           <td>{!isEmpty(aclEnforcer) ? aclEnforcer : "--"}</td>
         </tr>
         <tr>
-          <td className="text-nowrap">Agent Host Name </td>
+          <td>Agent Host Name </td>
           <td>{!isEmpty(agentHost) ? agentHost : "--"}</td>
         </tr>
         <tr>
@@ -223,21 +227,13 @@ export const AccessLogsTable = ({ data = {} }) => {
         <tr>
           <td>Datasets</td>
           <td>
-            {!isEmpty(datasets)
-              ? JSON.parse(datasets)
-                  .sort()
-                  .join(", ")
-              : "--"}
+            {!isEmpty(datasets) ? JSON.parse(datasets).sort().join(", ") : "--"}
           </td>
         </tr>
         <tr>
           <td>Projects</td>
           <td>
-            {!isEmpty(projects)
-              ? JSON.parse(projects)
-                  .sort()
-                  .join(", ")
-              : "--"}
+            {!isEmpty(projects) ? JSON.parse(projects).sort().join(", ") : "--"}
           </td>
         </tr>
       </tbody>

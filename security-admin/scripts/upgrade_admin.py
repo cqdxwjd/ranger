@@ -14,14 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import print_function
-try:
-	from StringIO import StringIO
-except ImportError:
-	from io import StringIO
-try:
-	from ConfigParser import ConfigParser
-except ImportError:
-	from configparser import ConfigParser
+from io import StringIO
+from configparser import ConfigParser
 import xml.etree.ElementTree as ET
 import os,sys,getopt
 from os import listdir
@@ -112,6 +106,7 @@ config2xmlMAP = {
 	'xa.scheduler.enabled':'ranger.scheduler.enabled',
 	'xa.audit.store':'ranger.audit.source.type',
 	'audit_elasticsearch_urls':'ranger.audit.elasticsearch.urls',
+	'audit_elasticsearch_protocol':'ranger.audit.elasticsearch.protocol',
 	'audit_elasticsearch_port':'ranger.audit.elasticsearch.port',
 	'audit_elasticsearch_user':'ranger.audit.elasticsearch.user',
 	'audit_elasticsearch_password':'ranger.audit.elasticsearch.password',
@@ -150,7 +145,7 @@ def getPropertiesConfigMap(configFileName):
 	config.seek(0,os.SEEK_SET)
 	fcp = ConfigParser()
 	fcp.optionxform = str
-	fcp.readfp(config)
+	fcp.read_file(config)
 	for k,v in fcp.items('dummysection'):
 		ret[k] = v
 	return ret
@@ -163,7 +158,7 @@ def getPropertiesKeyList(configFileName):
 	config.seek(0,os.SEEK_SET)
 	fcp = ConfigParser()
 	fcp.optionxform = str
-	fcp.readfp(config)
+	fcp.read_file(config)
 	for k,v in fcp.items('dummysection'):
 		ret.append(k)
 	return ret

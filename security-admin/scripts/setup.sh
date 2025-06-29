@@ -69,8 +69,10 @@ fi
 LOGFILE=$(eval echo " $(get_prop 'LOGFILE' $PROPFILE)")
 
 PYTHON_COMMAND_INVOKER=$(get_prop 'PYTHON_COMMAND_INVOKER' $PROPFILE)
+
 DB_FLAVOR=$(get_prop 'DB_FLAVOR' $PROPFILE)
 SQL_CONNECTOR_JAR=$(get_prop 'SQL_CONNECTOR_JAR' $PROPFILE)
+CONNECTION_STRING_ADDITIONAL_PARAMS=$(get_prop 'CONNECTION_STRING_ADDITIONAL_PARAMS' $PROPFILE)
 db_root_user=$(get_prop 'db_root_user' $PROPFILE)
 db_root_password=$(get_prop 'db_root_password' $PROPFILE)
 db_host=$(get_prop 'db_host' $PROPFILE)
@@ -94,6 +96,7 @@ javax_net_ssl_trustStore=$(get_prop 'javax_net_ssl_trustStore' $PROPFILE)
 javax_net_ssl_trustStorePassword=$(get_prop 'javax_net_ssl_trustStorePassword' $PROPFILE)
 audit_store=$(get_prop 'audit_store' $PROPFILE)
 audit_elasticsearch_urls=$(get_prop 'audit_elasticsearch_urls' $PROPFILE)
+audit_elasticsearch_protocol=$(get_prop 'audit_elasticsearch_protocol' $PROPFILE)
 audit_elasticsearch_port=$(get_prop 'audit_elasticsearch_port' $PROPFILE)
 audit_elasticsearch_user=$(get_prop 'audit_elasticsearch_user' $PROPFILE)
 audit_elasticsearch_password=$(get_prop 'audit_elasticsearch_password' $PROPFILE)
@@ -218,9 +221,11 @@ get_distro(){
 	log "[I] Checking distribution name.."
 	ver=$(cat /etc/*{issues,release,version} 2> /dev/null)
 	if [[ $(echo $ver | grep DISTRIB_ID) ]]; then
-                DIST_NAME=$(lsb_release -si)
+	  DIST_NAME=$(lsb_release -si)
+	elif [[ $(echo $ver | grep -E '^NAME=' | cut -d'"' -f2) ]]; then
+	  DIST_NAME=$(echo $ver | grep -E '^NAME=' | cut -d'"' -f2)
 	else
-                DIST_NAME=$(echo $ver | cut -d ' ' -f 1 | sort -u | head -1)
+	  DIST_NAME=$(echo $ver | cut -d ' ' -f 1 | sort -u | head -1)
 	fi
 	export $DIST_NAME
 	log "[I] Found distribution : $DIST_NAME"
@@ -743,7 +748,12 @@ update_properties() {
 	if [ "${DB_FLAVOR}" == "MSSQL" ]
 	then
 		propertyName=ranger.jpa.jdbc.url
-		newPropertyValue="jdbc:sqlserver://${DB_HOST};databaseName=${db_name}"
+		if [ "${CONNECTION_STRING_ADDITIONAL_PARAMS}" != "" ]
+		then
+  			newPropertyValue="jdbc:sqlserver://${DB_HOST};databaseName=${db_name};${CONNECTION_STRING_ADDITIONAL_PARAMS}"
+     		else
+       			newPropertyValue="jdbc:sqlserver://${DB_HOST};databaseName=${db_name}"
+	  	fi
 		updatePropertyToFilePy $propertyName $newPropertyValue $to_file_ranger
 
 		propertyName=ranger.jpa.jdbc.dialect
@@ -809,6 +819,10 @@ update_properties() {
 	then
 		propertyName=ranger.audit.elasticsearch.urls
 		newPropertyValue=${audit_elasticsearch_urls}
+		updatePropertyToFilePy $propertyName $newPropertyValue $to_file_ranger
+
+		propertyName=ranger.audit.elasticsearch.protocol
+		newPropertyValue=${audit_elasticsearch_protocol}
 		updatePropertyToFilePy $propertyName $newPropertyValue $to_file_ranger
 
 		propertyName=ranger.audit.elasticsearch.port

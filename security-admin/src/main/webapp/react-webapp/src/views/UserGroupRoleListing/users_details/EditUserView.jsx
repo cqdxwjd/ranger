@@ -20,13 +20,12 @@
 import React, { useEffect, useReducer } from "react";
 import { Tab, Button, Nav, Row, Col } from "react-bootstrap";
 import { Form, Field } from "react-final-form";
-import { getUserProfile } from "Utils/appState";
 import UserFormComp from "Views/UserGroupRoleListing/users_details/UserFormComp";
 import { Loader, scrollToError } from "Components/CommonComponents";
 import { fetchApi } from "Utils/fetchAPI";
 import { UserTypes, RegexValidation } from "Utils/XAEnums";
 import { toast } from "react-toastify";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { has } from "lodash";
 import { commonBreadcrumb, InfoIcon } from "../../../utils/XAUtils";
 
@@ -52,13 +51,11 @@ const userFormReducer = (state, action) => {
   }
 };
 
-function AddUserView(props) {
+function AddUserView() {
   const params = useParams();
   const [userDetails, dispatch] = useReducer(userFormReducer, initialState);
   const { userInfo, loader } = userDetails;
-  const { state } = useLocation();
   const navigate = useNavigate();
-  const userProps = getUserProfile();
 
   useEffect(() => {
     if (params?.userID) {
@@ -117,7 +114,7 @@ function AddUserView(props) {
       ...userDetails
     };
     try {
-      const passwdResp = await fetchApi({
+      await fetchApi({
         url: `xusers/secure/users/${params.userID}`,
         method: "PUT",
         data: userDetails
@@ -136,7 +133,8 @@ function AddUserView(props) {
 
   return loader ? (
     <Loader />
-  ) : userInfo.userSource == UserTypes.USER_EXTERNAL.value ? (
+  ) : userInfo.userSource == UserTypes.USER_EXTERNAL.value ||
+    userInfo.userSource == UserTypes.USER_FEDERATED.value ? (
     <>
       <div className="header-wraper">
         <h3 className="wrap-header bold">User Detail</h3>
@@ -188,10 +186,8 @@ function AddUserView(props) {
                       handleSubmit,
                       form,
                       submitting,
-                      values,
                       invalid,
-                      errors,
-                      pristine
+                      errors
                     }) => (
                       <div className="wrap">
                         <form
@@ -211,11 +207,11 @@ function AddUserView(props) {
                             {({ input, meta }) => (
                               <Row className="form-group">
                                 <Col xs={3}>
-                                  <label className="form-label pull-right">
+                                  <label className="form-label float-end">
                                     New Password *
                                   </label>
                                 </Col>
-                                <Col xs={4}>
+                                <Col xs={4} className={"position-relative"}>
                                   <input
                                     {...input}
                                     type="password"
@@ -235,7 +231,7 @@ function AddUserView(props) {
                                     data-cy="newPassword"
                                   />
                                   <InfoIcon
-                                    css="info-user-role-grp-icon"
+                                    css="input-box-info-icon"
                                     position="right"
                                     message={
                                       <p
@@ -259,11 +255,11 @@ function AddUserView(props) {
                             {({ input, meta }) => (
                               <Row className="form-group">
                                 <Col xs={3}>
-                                  <label className="form-label pull-right">
+                                  <label className="form-label float-end">
                                     Password Confirm *
                                   </label>
                                 </Col>
-                                <Col xs={4}>
+                                <Col xs={4} className={"position-relative"}>
                                   <input
                                     {...input}
                                     name="reEnterPassword"
@@ -283,7 +279,7 @@ function AddUserView(props) {
                                     data-cy="reEnterPassword"
                                   />
                                   <InfoIcon
-                                    css="info-user-role-grp-icon"
+                                    css="input-box-info-icon"
                                     position="right"
                                     message={
                                       <p

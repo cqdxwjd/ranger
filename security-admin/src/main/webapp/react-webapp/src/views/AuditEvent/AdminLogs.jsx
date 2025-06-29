@@ -35,7 +35,8 @@ import {
   getTableSortType,
   fetchSearchFilterParams,
   parseSearchFilter,
-  serverError
+  serverError,
+  currentTimeZone
 } from "../../utils/XAUtils";
 import { Loader } from "../../components/CommonComponents";
 
@@ -220,6 +221,23 @@ function Admin() {
                   Role {action}d <strong>{objectname}</strong>
                 </span>
               );
+            else if (classtype == ClassTypes.CLASS_TYPE_XA_GROUP_USER.value)
+              operation =
+                action == "create" ? (
+                  <span>
+                    User <strong> {objectname} </strong>added to group{" "}
+                    <strong>
+                      {rawValue?.row?.original?.parentObjectName || " "}
+                    </strong>
+                  </span>
+                ) : (
+                  <span>
+                    User <strong> {objectname} </strong>removed from group{" "}
+                    <strong>
+                      {rawValue?.row?.original?.parentObjectName || " "}
+                    </strong>
+                  </span>
+                );
             else if (classtype == ClassTypes.CLASS_TYPE_RANGER_DATASET.value)
               operation = (
                 <span>
@@ -238,19 +256,26 @@ function Admin() {
                   Data Share {action}d <strong>{objectname}</strong>
                 </span>
               );
-            else if (classtype == ClassTypes.CLASS_TYPE_RANGER_SHARED_RESOURCE.value)
+            else if (
+              classtype == ClassTypes.CLASS_TYPE_RANGER_SHARED_RESOURCE.value
+            )
               operation = (
                 <span>
                   Shared Resource {action}d <strong>{objectname}</strong>
                 </span>
               );
-            else if (classtype == ClassTypes.CLASS_TYPE_RANGER_DATA_SHARE_IN_DATASET.value)
+            else if (
+              classtype ==
+              ClassTypes.CLASS_TYPE_RANGER_DATA_SHARE_IN_DATASET.value
+            )
               operation = (
                 <span>
                   DataShare in Dataset {action}d <strong>{objectname}</strong>
                 </span>
               );
-            else if (classtype == ClassTypes.CLASS_TYPE_RANGER_DATASET_IN_PROJECT.value)
+            else if (
+              classtype == ClassTypes.CLASS_TYPE_RANGER_DATASET_IN_PROJECT.value
+            )
               operation = (
                 <span>
                   Dataset in Project {action}d <strong>{objectname}</strong>
@@ -286,7 +311,7 @@ function Admin() {
         disableSortBy: true
       },
       {
-        Header: "Date ( India Standard Time )",
+        Header: `Date ( ${currentTimeZone()} )`,
         accessor: "createDate",
         Cell: (rawValue) => {
           const date = rawValue.value;
@@ -302,37 +327,37 @@ function Admin() {
           if (rawValue.value == "create") {
             operation = (
               <span className="text-center d-block">
-                <Badge variant="success">{capitalize(rawValue.value)}</Badge>
+                <Badge bg="success">{capitalize(rawValue.value)}</Badge>
               </span>
             );
           } else if (rawValue.value == "update") {
             operation = (
               <span className="text-center d-block">
-                <Badge variant="warning">{capitalize(rawValue.value)}</Badge>
+                <Badge bg="warning">{capitalize(rawValue.value)}</Badge>
               </span>
             );
           } else if (rawValue.value == "delete") {
             operation = (
               <span className="text-center d-block">
-                <Badge variant="danger">{capitalize(rawValue.value)}</Badge>
+                <Badge bg="danger">{capitalize(rawValue.value)}</Badge>
               </span>
             );
           } else if (rawValue.value == "IMPORT START") {
             operation = (
               <span className="text-center d-block">
-                <Badge variant="info">{capitalize(rawValue.value)}</Badge>
+                <Badge bg="info">{capitalize(rawValue.value)}</Badge>
               </span>
             );
           } else if (rawValue.value == "IMPORT END") {
             operation = (
               <span className="text-center d-block">
-                <Badge variant="info">{capitalize(rawValue.value)}</Badge>
+                <Badge bg="info">{capitalize(rawValue.value)}</Badge>
               </span>
             );
           } else {
             operation = (
               <span className="text-center d-block">
-                <Badge variant="secondary">
+                <Badge bg="secondary">
                   {startCase(toLower(rawValue.value))}
                 </Badge>{" "}
               </span>
@@ -378,7 +403,7 @@ function Admin() {
   const getDefaultSort = React.useMemo(
     () => [
       {
-        id: "createDate",
+        id: "id",
         desc: true
       }
     ],

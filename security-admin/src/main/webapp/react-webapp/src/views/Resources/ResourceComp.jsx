@@ -26,7 +26,8 @@ import { filter, groupBy, some } from "lodash";
 import { toast } from "react-toastify";
 import { udfResourceWarning } from "../../utils/XAMessages";
 import ResourceSelectComp from "./ResourceSelectComp";
-import { getResourcesDefVal } from "../../utils/XAUtils";
+import { getResourcesDefVal } from "Utils/XAUtils";
+import { selectInputCustomStyles } from "Components/CommonComponents";
 
 const noneOptions = {
   label: "None",
@@ -70,7 +71,6 @@ export default function ResourceComp(props) {
     if (index !== 0) {
       let previousKey = grpResourcesKeys[index - 1];
       const parentResourceKey = `resourceName-${previousKey}`;
-      const resourceKey = `resourceName-${levelKey}`;
       if (formValues && formValues[parentResourceKey]) {
         op = filter(grpResources[levelKey], {
           parent: formValues[parentResourceKey].name
@@ -85,13 +85,8 @@ export default function ResourceComp(props) {
 
   const RenderValidateField = ({ name }) =>
     (formValues && formValues[name]?.mandatory && (
-      <span
-        className={!isGds ? "compulsory-resource" : "compulsory-resource top-0"}
-      >
-        *
-      </span>
-    )) ||
-    null;
+      <span className={!isGds ? "" : "top-0"}>*</span>
+    )) || <span>&nbsp;</span>;
 
   const renderResourceSelect = (levelKey, index) => {
     let renderLabel = false;
@@ -177,25 +172,16 @@ export default function ResourceComp(props) {
       return null;
     }
 
-    const customStyles = {
-      container: () => ({
-        width: "75%",
-        display: "inline-block",
-        float: "right"
-      })
-    };
-
     return (
       <FormB.Group
         as={Row}
         className="mb-3"
-        controlId="policyName"
+        controlId={`Resource-${levelKey}`}
         key={`Resource-${levelKey}`}
       >
         <Col sm={3}>
           <Field
             defaultValue={!policyId && getResourceLabelOp(levelKey, index)[0]}
-            className="form-control"
             name={
               isMultiResources
                 ? `${name}.resourceName-${levelKey}`
@@ -204,27 +190,29 @@ export default function ResourceComp(props) {
             render={({ input }) =>
               formValues[resourceKey] ? (
                 renderResourceSelect(levelKey, index) ? (
-                  <span className="pull-right fnt-14">
-                    <FormB.Label>
+                  <span className="float-end fnt-14">
+                    <FormB.Label className="position-relative pe-2">
                       {getResourceLabelOp(levelKey, index)[0]["label"]}
+                      <RenderValidateField name={`resourceName-${levelKey}`} />
                     </FormB.Label>
-                    <RenderValidateField name={`resourceName-${levelKey}`} />
                   </span>
                 ) : (
-                  <>
-                    <Select
-                      {...input}
-                      options={getResourceLabelOp(levelKey, index)}
-                      getOptionLabel={(obj) => obj.label}
-                      getOptionValue={(obj) => obj.name}
-                      onChange={(value) =>
-                        handleResourceChange(value, input, index)
-                      }
-                      styles={!isGds ? customStyles : ""}
-                      isSearchable={false}
-                    />
+                  <div className="resource-drop-down">
+                    <span className="w-75">
+                      <Select
+                        {...input}
+                        options={getResourceLabelOp(levelKey, index)}
+                        getOptionLabel={(obj) => obj.label}
+                        getOptionValue={(obj) => obj.name}
+                        onChange={(value) =>
+                          handleResourceChange(value, input, index)
+                        }
+                        isSearchable={false}
+                        styles={selectInputCustomStyles}
+                      />
+                    </span>
                     <RenderValidateField name={`resourceName-${levelKey}`} />
-                  </>
+                  </div>
                 )
               ) : null
             }

@@ -21,28 +21,28 @@ import React, { Component } from "react";
 import { Button, Col, Row } from "react-bootstrap";
 import Select from "react-select";
 import { toast } from "react-toastify";
-import { filter, map, sortBy, uniq, isEmpty } from "lodash";
+import { filter, map, sortBy, uniq, isEmpty, cloneDeep } from "lodash";
 import { fetchApi } from "Utils/fetchAPI";
 import {
   isSystemAdmin,
   isKeyAdmin,
   isAuditor,
   isKMSAuditor,
-  isUser
+  isUser,
+  serverError
 } from "Utils/XAUtils";
 import withRouter from "Hooks/withRouter";
 import ServiceDefinition from "./ServiceDefinition";
 import ExportPolicy from "./ExportPolicy";
 import ImportPolicy from "./ImportPolicy";
-import { serverError } from "../../utils/XAUtils";
-import { BlockUi, Loader } from "../../components/CommonComponents";
-import { getServiceDef } from "../../utils/appState";
+import { BlockUi, Loader } from "Components/CommonComponents";
+import { getServiceDef } from "Utils/appState";
 import noServiceImage from "Images/no-service.svg";
 
 class ServiceDefinitions extends Component {
   constructor(props) {
     super(props);
-    this.serviceDefData = getServiceDef();
+    this.serviceDefData = cloneDeep(getServiceDef());
     this.state = {
       serviceDefs: this.props.isTagView
         ? this.serviceDefData.tagServiceDefs
@@ -136,19 +136,16 @@ class ServiceDefinitions extends Component {
 
     try {
       servicesResp = await fetchApi({
-        url: "plugins/services"
+        url: "public/v2/api/service-headers"
       });
       if (this.state.isTagView) {
-        tagServices = filter(servicesResp.data.services, ["type", "tag"]);
+        tagServices = filter(servicesResp?.data, ["type", "tag"]);
       } else {
         if (this.state.isKMSRole) {
-          resourceServices = filter(
-            servicesResp.data.services,
-            (service) => service.type == "kms"
-          );
+          resourceServices = filter(servicesResp?.data, ["type", "kms"]);
         } else {
           resourceServices = filter(
-            servicesResp.data.services,
+            servicesResp?.data,
             (service) => service.type !== "tag" && service.type !== "kms"
           );
         }
@@ -160,7 +157,7 @@ class ServiceDefinitions extends Component {
     }
 
     this.setState({
-      allServices: servicesResp.data.services,
+      allServices: servicesResp?.data || [],
       services: this.state.isTagView ? tagServices : resourceServices,
       filterServices: this.state.isTagView ? tagServices : resourceServices,
       loader: false
@@ -360,7 +357,7 @@ class ServiceDefinitions extends Component {
     return (
       <React.Fragment>
         <div>
-          <div className="text-right px-3 pt-3">
+          <div className="text-end px-3 pt-3">
             {!isKMSRole && (
               <div
                 className="body bold  pd-b-10"
@@ -421,7 +418,7 @@ class ServiceDefinitions extends Component {
                 size="sm"
                 className={`${
                   isEmpty(filterServiceDefs) ? "not-allowed" : "pe-auto"
-                } ml-2`}
+                } ms-2`}
                 onClick={this.showImportModal}
                 data-id="importBtn"
                 data-cy="importBtn"
@@ -450,7 +447,7 @@ class ServiceDefinitions extends Component {
                 size="sm"
                 className={`${
                   isEmpty(filterServiceDefs) ? "not-allowed" : "pe-auto"
-                } ml-2`}
+                } ms-2`}
                 onClick={this.showExportModal}
                 data-id="exportBtn"
                 data-cy="exportBtn"

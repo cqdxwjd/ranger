@@ -19,27 +19,27 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import CreatableSelect from "react-select/creatable";
+import { selectInputCustomStyles } from "Components/CommonComponents";
 
 const CreatableField = (props) => {
   const { actionValues, creatableOnChange } = props;
   const [actionValue, setActionValue] = useState(actionValues);
   const [actionInputValue, setActionInputValue] = useState("");
-const prevProps = useRef(actionValues);
+  const prevProps = useRef(actionValues);
 
-useEffect(()=>{
-  if(JSON.stringify(prevProps) !== JSON.stringify(actionValues)){
-   prevProps.current = actionValues
-   setActionValue(prevProps.current)
-  }
-},[actionValues])
+  useEffect(() => {
+    if (JSON.stringify(prevProps) !== JSON.stringify(actionValues)) {
+      prevProps.current = actionValues;
+      setActionValue(prevProps.current);
+    }
+  }, [actionValues]);
 
-
-  const handleChange = (value, input) => {
+  const handleChange = (value) => {
     setActionValue(value);
     creatableOnChange(value);
   };
 
-  const handleKeyDown = (e, input) => {
+  const handleKeyDown = (e) => {
     if (!actionInputValue) return;
     switch (e.key) {
       case "Enter":
@@ -74,6 +74,7 @@ useEffect(()=>{
       onChange={(actionValue) => handleChange(actionValue)}
       onInputChange={handleInputChange}
       onKeyDown={(e) => handleKeyDown(e)}
+      styles={selectInputCustomStyles}
     />
   );
 };

@@ -29,12 +29,7 @@ import {
 } from "react-bootstrap";
 import moment from "moment-timezone";
 import XATableLayout from "Components/XATableLayout";
-import {
-  UserRoles,
-  UserSource,
-  UserTypes,
-  VisibilityStatus
-} from "Utils/XAEnums";
+import { UserRoles, UserTypes, VisibilityStatus } from "Utils/XAEnums";
 import { MoreLess, scrollToNewData } from "Components/CommonComponents";
 import {
   useNavigate,
@@ -359,7 +354,7 @@ function Users() {
             let role = rawValue.value[0];
             return (
               <h6 className="text-center">
-                <Badge variant="info">{UserRoles[role].label} </Badge>
+                <Badge bg="info">{UserRoles[role].label} </Badge>
               </h6>
             );
           }
@@ -371,23 +366,13 @@ function Users() {
         Header: "User Source",
         accessor: "userSource",
         Cell: (rawValue) => {
-          if (rawValue.value !== null && rawValue.value !== undefined) {
-            if (rawValue.value == UserSource.XA_PORTAL_USER.value)
-              return (
-                <h6 className="text-center">
-                  <Badge variant="success">
-                    {UserTypes.USER_INTERNAL.label}
-                  </Badge>
-                </h6>
-              );
-            else
-              return (
-                <h6 className="text-center">
-                  <Badge variant="warning">
-                    {UserTypes.USER_EXTERNAL.label}
-                  </Badge>
-                </h6>
-              );
+          if (rawValue?.value != null) {
+            const userSourceVal = find(UserTypes, { value: rawValue.value });
+            return (
+              <h6 className="text-center">
+                <Badge bg={userSourceVal.variant}>{userSourceVal.label}</Badge>
+              </h6>
+            );
           } else return "--";
         },
         width: 70
@@ -398,7 +383,7 @@ function Users() {
         Cell: (rawValue) => {
           return rawValue.value ? (
             <h6 className="text-center">
-              <Badge variant="success">{rawValue.value} </Badge>
+              <Badge bg="success">{rawValue.value} </Badge>
             </h6>
           ) : (
             <div className="text-center">--</div>
@@ -438,7 +423,7 @@ function Users() {
             if (rawValue.value == VisibilityStatus.STATUS_VISIBLE.value)
               return (
                 <h6 className="text-center">
-                  <Badge variant="success">
+                  <Badge bg="success">
                     {VisibilityStatus.STATUS_VISIBLE.label}
                   </Badge>
                 </h6>
@@ -446,7 +431,7 @@ function Users() {
             else
               return (
                 <h6 className="text-center">
-                  <Badge variant="info">
+                  <Badge bg="info">
                     {VisibilityStatus.STATUS_HIDDEN.label}
                   </Badge>
                 </h6>
@@ -568,7 +553,8 @@ function Users() {
       options: () => {
         return [
           { value: "0", label: "Internal" },
-          { value: "1", label: "External" }
+          { value: "1", label: "External" },
+          { value: "6", label: "Federated" }
         ];
       }
     },
@@ -630,7 +616,7 @@ function Users() {
               />
             </Col>
             {isSystemAdmin() && (
-              <Col sm={4} className="text-right">
+              <Col sm={4} className="text-end">
                 <Button
                   variant="primary"
                   size="sm"
@@ -644,7 +630,7 @@ function Users() {
                 <DropdownButton
                   title="Set Visibility"
                   size="sm"
-                  className="ml-1 d-inline-block manage-visibility"
+                  className="ms-1 d-inline-block manage-visibility"
                   onSelect={handleSetVisibility}
                   data-id="hideShowVisibility"
                   data-cy="hideShowVisibility"
@@ -657,7 +643,7 @@ function Users() {
                   size="sm"
                   title="Delete"
                   onClick={handleDeleteBtnClick}
-                  className="ml-1 btn-sm"
+                  className="ms-1 btn-sm"
                   data-id="deleteUserGroup"
                   data-cy="deleteUserGroup"
                 >
@@ -694,11 +680,12 @@ function Users() {
                 Are you sure you want to delete the&nbsp;
                 {selectedRows.current.length === 1 ? (
                   <>
-                    <b>"{selectedRows.current[0].original.name}"</b> user ?
+                    <b>&quot;{selectedRows.current[0].original.name}&quot;</b>
+                    &nbsp;user ?
                   </>
                 ) : (
                   <>
-                    selected<b> {selectedRows.current.length}</b> users?
+                    selected<b> {selectedRows.current.length}</b> users ?
                   </>
                 )}
               </span>

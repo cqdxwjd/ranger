@@ -17,12 +17,50 @@
  * under the License.
  */
 
-import React from "react";
-import { Alert, Row, Col, Table, Badge } from "react-bootstrap";
+import React, { useEffect, useState } from "react";
+import { fetchApi } from "Utils/fetchAPI";
+import { Alert, Row, Col, Table, Badge, Modal, Button } from "react-bootstrap";
 import { difference, isEmpty, keys, map, omit, pick } from "lodash";
+import { ModalLoader } from "Components/CommonComponents";
 
 export const ServiceViewDetails = (props) => {
-  let { serviceData, serviceDefData } = props;
+  const { serviceData: service, serviceDefData } = props;
+  const [serviceData, setServiceData] = useState({});
+  const [loader, setLoader] = useState(true);
+
+  useEffect(() => {
+    if (props.showViewModal) {
+      if (props.dashboardServiceView) {
+        fetchService();
+      } else {
+        setService();
+      }
+    }
+  }, [props.showViewModal]);
+
+  const fetchService = async () => {
+    let getServiceData = {};
+
+    try {
+      setLoader(true);
+      getServiceData = await fetchApi({
+        url: `plugins/services/${service.id}`
+      });
+    } catch (error) {
+      console.error(
+        `Error occurred while fetching service with id ${serviceData.id} - ! ${error}`
+      );
+    }
+
+    setServiceData(getServiceData?.data);
+    setLoader(false);
+  };
+
+  const setService = () => {
+    setServiceData(service);
+    setLoader(false);
+  };
+
   const getServiceConfigs = (serviceDef, serviceConfigs) => {
     let tableRow = [];
     let configs = {};
@@ -85,22 +123,24 @@ export const ServiceViewDetails = (props) => {
 
     return tableRow;
   };
+
   const getFilterResources = (resources) => {
     let keyname = Object.keys(resources);
+
     return keyname.map((key, index) => {
       let val = resources[key].values;
       return (
         <div key={index} className="clearfix mb-2">
-          <span className="float-left">
+          <span className="float-start">
             <b>{key}: </b>
             {val.join()}
           </span>
           {resources[key].isExcludes !== undefined ? (
             <h6 className="d-inline">
               {resources[key].isExcludes ? (
-                <span className="badge badge-dark float-right">Include</span>
+                <span className="badge bg-dark float-end">Exclude</span>
               ) : (
-                <span className="badge badge-dark float-right">Exclude</span>
+                <span className="badge bg-dark float-end">Include</span>
               )}
             </h6>
           ) : (
@@ -109,11 +149,9 @@ export const ServiceViewDetails = (props) => {
           {resources[key].isRecursive !== undefined ? (
             <h6 className="d-inline">
               {resources[key].isRecursive ? (
-                <span className="badge badge-dark float-right">Recursive</span>
+                <span className="badge bg-dark float-end">Recursive</span>
               ) : (
-                <span className="badge badge-dark float-right">
-                  Non Recursive
-                </span>
+                <span className="badge bg-dark float-end">Non Recursive</span>
               )}
             </h6>
           ) : (
@@ -123,6 +161,7 @@ export const ServiceViewDetails = (props) => {
       );
     });
   };
+
   const getAuditFilters = (serviceConfigs) => {
     let tableRow = [];
     let auditFilters = pick(serviceConfigs, "ranger.plugin.audit.filters");
@@ -158,18 +197,18 @@ export const ServiceViewDetails = (props) => {
           <td className="text-center">
             {a.isAudited == true ? (
               <h6>
-                <Badge variant="info">Yes</Badge>
+                <Badge bg="info">Yes</Badge>
               </h6>
             ) : (
               <h6>
-                <Badge variant="info">No</Badge>
+                <Badge bg="info">No</Badge>
               </h6>
             )}
           </td>
           <td className="text-center">
             {a.accessResult !== undefined ? (
               <h6>
-                <Badge variant="info">{a.accessResult}</Badge>
+                <Badge bg="info">{a.accessResult}</Badge>
               </h6>
             ) : (
               "--"
@@ -188,7 +227,7 @@ export const ServiceViewDetails = (props) => {
             {a.actions !== undefined
               ? a.actions.map((action) => (
                   <h6 key={action}>
-                    <Badge variant="info">{action}</Badge>
+                    <Badge bg="info">{action}</Badge>
                   </h6>
                 ))
               : "--"}
@@ -197,7 +236,7 @@ export const ServiceViewDetails = (props) => {
             {a.accessTypes !== undefined && a.accessTypes.length > 0
               ? a.accessTypes.map((accessType) => (
                   <h6 key={accessType}>
-                    <Badge variant="info">{accessType}</Badge>
+                    <Badge bg="info">{accessType}</Badge>
                   </h6>
                 ))
               : "--"}
@@ -207,7 +246,7 @@ export const ServiceViewDetails = (props) => {
               ? a.users.map((user) => (
                   <h6 key={user}>
                     <Badge
-                      variant="info"
+                      bg="info"
                       className="m-1 text-truncate more-less-width"
                       title={user}
                       key={user}
@@ -223,7 +262,7 @@ export const ServiceViewDetails = (props) => {
               ? a.groups.map((group) => (
                   <h6 key={group}>
                     <Badge
-                      variant="info"
+                      bg="info"
                       className="m-1 text-truncate more-less-width"
                       title={group}
                       key={group}
@@ -238,7 +277,7 @@ export const ServiceViewDetails = (props) => {
             {a.roles !== undefined
               ? a.roles.map((role) => (
                   <h6 key={role}>
-                    <Badge variant="info">{role}</Badge>
+                    <Badge bg="info">{role}</Badge>
                   </h6>
                 ))
               : "--"}
@@ -249,78 +288,106 @@ export const ServiceViewDetails = (props) => {
 
     return tableRow;
   };
+
   return (
-    <Row>
-      <Col sm={12}>
-        <p className="form-header">Service Details :</p>
-        <Table bordered size="sm">
-          <tbody className="service-details">
-            <tr>
-              <td>Service Name</td>
-              <td>{serviceData.name}</td>
-            </tr>
-            <tr>
-              <td>Display Name</td>
-              <td>{serviceData.displayName}</td>
-            </tr>
-            <tr>
-              <td>Description</td>
-              <td>
-                {serviceData.description ? serviceData.description : "--"}
-              </td>
-            </tr>
-            <tr>
-              <td>Active Status</td>
-              <td>
-                <h6>
-                  <Badge variant="info">
-                    {serviceData.isEnabled ? `Enabled` : `Disabled`}
-                  </Badge>
-                </h6>
-              </td>
-            </tr>
-            <tr>
-              <td>Tag Service</td>
-              <td>
-                {serviceData.tagService ? (
-                  <h6>
-                    <Badge variant="info">{serviceData.tagService}</Badge>
-                  </h6>
-                ) : (
-                  "--"
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </Table>
-        <p className="form-header">Config Properties :</p>
-        <div className="table-responsive">
-          <Table bordered size="sm">
-            <tbody className="service-config">
-              {getServiceConfigs(serviceDefData, serviceData.configs)}
-            </tbody>
-          </Table>
-        </div>
-        <p className="form-header">Audit Filter :</p>
-        <div className="table-responsive">
-          <Table bordered size="sm" className="table-audit-filter-ready-only">
-            <thead>
-              <tr>
-                <th>Is Audited</th>
-                <th>Access Result</th>
-                <th>Resources</th>
-                <th>Operations</th>
-                <th>Permissions</th>
-                <th>Users</th>
-                <th>Groups</th>
-                <th>Roles</th>
-              </tr>
-            </thead>
-            <tbody>{getAuditFilters(serviceData.configs)}</tbody>
-          </Table>
-        </div>
-      </Col>
-    </Row>
+    <Modal show={props.showViewModal} onHide={props.hideViewModal} size="xl">
+      <Modal.Header closeButton>
+        <Modal.Title>Service Details</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {loader ? (
+          <ModalLoader />
+        ) : (
+          <Row>
+            <Col sm={12}>
+              <p className="form-header">Service Details :</p>
+              <div className="overflow-auto">
+                <Table bordered size="sm">
+                  <tbody className="service-details">
+                    <tr>
+                      <td className="text-nowrap">Service Name</td>
+                      <td className="text-break">{serviceData.name}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-nowrap">Display Name</td>
+                      <td className="text-break">{serviceData.displayName}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-nowrap">Description</td>
+                      <td className="text-break">
+                        {serviceData.description
+                          ? serviceData.description
+                          : "--"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Active Status</td>
+                      <td>
+                        <h6>
+                          <Badge bg="info">
+                            {serviceData.isEnabled ? `Enabled` : `Disabled`}
+                          </Badge>
+                        </h6>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="text-nowrap">Tag Service</td>
+                      <td className="text-break">
+                        {serviceData.tagService ? (
+                          <h6>
+                            <Badge bg="info">{serviceData.tagService}</Badge>
+                          </h6>
+                        ) : (
+                          "--"
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </div>
+              <p className="form-header">Config Properties :</p>
+              <div className="table-responsive">
+                <Table bordered size="sm">
+                  <tbody className="service-config">
+                    {serviceData?.configs &&
+                      getServiceConfigs(serviceDefData, serviceData.configs)}
+                  </tbody>
+                </Table>
+              </div>
+              <p className="form-header">Audit Filter :</p>
+              <div className="table-responsive">
+                <Table
+                  bordered
+                  size="sm"
+                  className="table-audit-filter-ready-only"
+                >
+                  <thead>
+                    <tr>
+                      <th>Is Audited</th>
+                      <th>Access Result</th>
+                      <th>Resources</th>
+                      <th>Operations</th>
+                      <th>Permissions</th>
+                      <th>Users</th>
+                      <th>Groups</th>
+                      <th>Roles</th>
+                    </tr>
+                  </thead>
+                  <tbody className="service-audit">
+                    {getAuditFilters(serviceData.configs)}
+                  </tbody>
+                </Table>
+              </div>
+            </Col>
+          </Row>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="primary" size="sm" onClick={props.hideViewModal}>
+          OK
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 };
 export default ServiceViewDetails;

@@ -21,6 +21,7 @@ package org.apache.ranger.plugin.policyevaluator;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.ranger.plugin.model.RangerBaseModelObject;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerServiceDef;
 import org.apache.ranger.plugin.policyengine.RangerAccessRequest;
@@ -31,15 +32,38 @@ import org.apache.ranger.plugin.util.RangerAccessRequestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator {
     private static final Logger LOG = LoggerFactory.getLogger(RangerOptimizedPolicyEvaluator.class);
 
-    private Set<String> roles          = new HashSet<>();
-    private Set<String> groups         = new HashSet<>();
-    private Set<String> users          = new HashSet<>();
-    private Set<String> accessPerms    = new HashSet<>();
+    // For computation of priority
+    private static final String RANGER_POLICY_EVAL_MATCH_ANY_PATTERN_STRING                                 = "*";
+    private static final String RANGER_POLICY_EVAL_MATCH_ONE_CHARACTER_STRING                               = "?";
+    private static final int    RANGER_POLICY_EVAL_SCORE_DEFAULT                                            = 10000;
+    private static final int    RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_RESOURCE                              = 100;
+    private static final int    RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_USERSGROUPS                           = 25;
+    private static final int    RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_ACCESS_TYPES                          = 25;
+    private static final int    RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_CUSTOM_CONDITIONS                     = 25;
+    private static final int    RANGER_POLICY_EVAL_SCORE_RESOURCE_DISCOUNT_MATCH_ANY_WILDCARD               = 25;
+    private static final int    RANGER_POLICY_EVAL_SCORE_RESOURCE_DISCOUNT_HAS_MATCH_ANY_WILDCARD           = 10;
+    private static final int    RANGER_POLICY_EVAL_SCORE_RESOURCE_DISCOUNT_HAS_MATCH_ONE_CHARACTER_WILDCARD = 5;
+    private static final int    RANGER_POLICY_EVAL_SCORE_RESOURCE_DISCOUNT_IS_EXCLUDES                      = 5;
+    private static final int    RANGER_POLICY_EVAL_SCORE_RESORUCE_DISCOUNT_IS_RECURSIVE                     = 5;
+    private static final int    RANGER_POLICY_EVAL_SCORE_CUSTOM_CONDITION_PENALTY                           = 5;
+    private static final int    RANGER_POLICY_EVAL_SCORE_DYNAMIC_RESOURCE_EVAL_PENALTY                      = 20;
+
+    private Set<String> roles        = RangerBaseModelObject.nullSafeSet(null);
+    private Set<String> groups       = RangerBaseModelObject.nullSafeSet(null);
+    private Set<String> users        = RangerBaseModelObject.nullSafeSet(null);
+    private Set<String> accessPerms  = RangerBaseModelObject.nullSafeSet(null);
     private boolean     delegateAdmin;
     private boolean     hasAllPerms;
     private boolean     hasPublicGroup;
@@ -47,30 +71,9 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
     private boolean     hasResourceOwner;
     private boolean     hasAllEvaluatorsInitialized;
 
-    // For computation of priority
-    private static final String RANGER_POLICY_EVAL_MATCH_ANY_PATTERN_STRING   = "*";
-    private static final String RANGER_POLICY_EVAL_MATCH_ONE_CHARACTER_STRING = "?";
-
-    private static final int RANGER_POLICY_EVAL_SCORE_DEFAULT                         = 10000;
-
-    private static final int RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_RESOURCE          = 100;
-    private static final int RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_USERSGROUPS       =  25;
-    private static final int RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_ACCESS_TYPES      =  25;
-    private static final int RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_CUSTOM_CONDITIONS =  25;
-
-    private static final int RANGER_POLICY_EVAL_SCORE_RESOURCE_DISCOUNT_MATCH_ANY_WILDCARD               = 25;
-    private static final int RANGER_POLICY_EVAL_SCORE_RESOURCE_DISCOUNT_HAS_MATCH_ANY_WILDCARD           = 10;
-    private static final int RANGER_POLICY_EVAL_SCORE_RESOURCE_DISCOUNT_HAS_MATCH_ONE_CHARACTER_WILDCARD =  5;
-    private static final int RANGER_POLICY_EVAL_SCORE_RESOURCE_DISCOUNT_IS_EXCLUDES                      =  5;
-    private static final int RANGER_POLICY_EVAL_SCORE_RESORUCE_DISCOUNT_IS_RECURSIVE                     =  5;
-    private static final int RANGER_POLICY_EVAL_SCORE_CUSTOM_CONDITION_PENALTY                           =  5;
-    private static final int RANGER_POLICY_EVAL_SCORE_DYNAMIC_RESOURCE_EVAL_PENALTY                      =  20;
-
     @Override
     public void init(RangerPolicy policy, RangerServiceDef serviceDef, RangerPolicyEngineOptions options) {
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("==> RangerOptimizedPolicyEvaluator.init()");
-        }
+        LOG.debug("==> RangerOptimizedPolicyEvaluator.init()");
 
         super.init(policy, serviceDef, options);
 
@@ -108,45 +111,22 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
 
         setEvalOrder(computeEvalOrder());
 
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("<== RangerOptimizedPolicyEvaluator.init()");
-        }
+        LOG.debug("<== RangerOptimizedPolicyEvaluator.init()");
     }
 
-    static class LevelResourceNames implements Comparable<LevelResourceNames> {
-        final int level;
-        final RangerPolicy.RangerPolicyResource policyResource;
+    @Override
+    protected boolean isAccessAllowed(String user, Set<String> userGroups, Set<String> roles, String owner, String accessType) {
+        LOG.debug("==> RangerOptimizedPolicyEvaluator.isAccessAllowed({}, {}, {}, {}, {})", user, userGroups, roles, owner, accessType);
 
-        public LevelResourceNames(int level, RangerPolicy.RangerPolicyResource policyResource) {
-            this.level = level;
-            this.policyResource = policyResource;
-        }
+        boolean ret = hasMatchablePolicyItem(user, userGroups, roles, owner, accessType) && super.isAccessAllowed(user, userGroups, roles, owner, accessType);
 
-        @Override
-        public int compareTo(LevelResourceNames other) {
-            // Sort in ascending order of level numbers
-            return Integer.compare(this.level, other.level);
-        }
+        LOG.debug("<== RangerOptimizedPolicyEvaluator.isAccessAllowed({}, {}, {}, {}, {}): {}", user, userGroups, roles, owner, accessType, ret);
 
-        @Override
-        public boolean equals(Object other) {
-            boolean ret = false;
-            if (other != null && (other instanceof LevelResourceNames)) {
-                ret = this == other || compareTo((LevelResourceNames) other) == 0;
-            }
-            return ret;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(this.level);
-        }
+        return ret;
     }
 
     public int computeEvalOrder() {
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("==> RangerOptimizedPolicyEvaluator.computeEvalOrder()");
-        }
+        LOG.debug("==> RangerOptimizedPolicyEvaluator.computeEvalOrder()");
 
         int evalOrder = RANGER_POLICY_EVAL_SCORE_DEFAULT;
 
@@ -160,13 +140,13 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
             RangerPolicy.RangerPolicyResource policyResource = kv.getValue();
             List<String>                      resourceValues = policyResource.getValues();
 
-            if(CollectionUtils.isNotEmpty(resourceValues)) {
-	            for (RangerServiceDef.RangerResourceDef resourceDef : resourceDefs) {
-	                if (resourceName.equals(resourceDef.getName())) {
-		                tmpList.add(new LevelResourceNames(resourceDef.getLevel(), policyResource));
-	                    break;
-	                }
-	            }
+            if (CollectionUtils.isNotEmpty(resourceValues)) {
+                for (RangerServiceDef.RangerResourceDef resourceDef : resourceDefs) {
+                    if (resourceName.equals(resourceDef.getName())) {
+                        tmpList.add(new LevelResourceNames(resourceDef.getLevel(), policyResource));
+                        break;
+                    }
+                }
             }
         }
         Collections.sort(tmpList); // Sort in ascending order of levels
@@ -220,42 +200,23 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
             evalOrder -= Math.min(groups.size() + users.size(), RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_USERSGROUPS);
         }
 
-        evalOrder -= Math.round(((float)RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_ACCESS_TYPES * accessPerms.size()) / serviceDef.getAccessTypes().size());
+        evalOrder -= Math.round(((float) RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_ACCESS_TYPES * accessPerms.size()) / serviceDef.getAccessTypes().size());
 
         int customConditionsDiscount = RANGER_POLICY_EVAL_SCORE_MAX_DISCOUNT_CUSTOM_CONDITIONS - (RANGER_POLICY_EVAL_SCORE_CUSTOM_CONDITION_PENALTY * this.getCustomConditionsCount());
-        if(customConditionsDiscount > 0) {
+        if (customConditionsDiscount > 0) {
             evalOrder -= customConditionsDiscount;
         }
 
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("<== RangerOptimizedPolicyEvaluator.computeEvalOrder(), policyName:" + policy.getName() + ", priority:" + evalOrder);
-        }
+        LOG.debug("<== RangerOptimizedPolicyEvaluator.computeEvalOrder(), policyName:{}, priority:{}", policy.getName(), evalOrder);
 
         return evalOrder;
-    }
-
-    @Override
-    protected boolean isAccessAllowed(String user, Set<String> userGroups, Set<String> roles, String owner, String accessType) {
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("==> RangerOptimizedPolicyEvaluator.isAccessAllowed(" + user + ", " + userGroups + ", " + roles + ", " + owner + ", " + accessType + ")");
-        }
-
-        boolean ret = hasMatchablePolicyItem(user, userGroups, roles, owner, accessType) && super.isAccessAllowed(user, userGroups, roles, owner, accessType);
-
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("<== RangerOptimizedPolicyEvaluator.isAccessAllowed(" + user + ", " + userGroups + ", " + roles + ", " + owner + ", " + accessType + "): " + ret);
-        }
-
-        return ret;
     }
 
     @Override
     protected boolean hasMatchablePolicyItem(RangerAccessRequest request) {
         boolean ret = false;
 
-        if (isUseAclSummaryForEvaluation()) {
-            ret = true;
-        } else if (checkIfAllEvaluatorsInitialized()) {
+        if (checkIfAllEvaluatorsInitialized()) {
             if (hasPublicGroup || hasCurrentUser || isOwnerMatch(request) || users.contains(request.getUser()) || CollectionUtils.containsAny(groups, request.getUserGroups()) || (CollectionUtils.isNotEmpty(roles) && CollectionUtils.containsAny(roles, RangerAccessRequestUtil.getCurrentUserRolesFromContext(request.getContext())))) {
                 if (hasAllPerms || request.isAccessTypeAny()) {
                     ret = true;
@@ -286,10 +247,10 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
 
         if (hasResourceOwner) {
             RangerAccessResource accessedResource = request.getResource();
-            String resourceOwner = accessedResource != null ? accessedResource.getOwnerUser() : null;
-            String user = request.getUser();
+            String               resourceOwner    = accessedResource != null ? accessedResource.getOwnerUser() : null;
+            String               user             = request.getUser();
 
-            if (user != null && resourceOwner != null && user.equals(resourceOwner)) {
+            if (user != null && user.equals(resourceOwner)) {
                 ret = true;
             }
         }
@@ -300,9 +261,7 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
     private boolean hasMatchablePolicyItem(String user, Set<String> userGroups, Set<String> rolesFromContext, String owner, String accessType) {
         boolean ret = false;
 
-        if (isUseAclSummaryForEvaluation()) {
-            ret = true;
-        } else if (checkIfAllEvaluatorsInitialized()) {
+        if (checkIfAllEvaluatorsInitialized()) {
             boolean hasRole = false;
             if (CollectionUtils.isNotEmpty(roles)) {
                 if (CollectionUtils.isNotEmpty(rolesFromContext)) {
@@ -331,32 +290,51 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
         return ret;
     }
 
+    private static Set<String> addAll(Set<String> coll, Collection<String> toAdd) {
+        if (CollectionUtils.isNotEmpty(toAdd)) {
+            if (CollectionUtils.isEmpty(coll)) {
+                coll = new HashSet<>(toAdd);
+            } else {
+                coll.addAll(toAdd);
+            }
+        }
+
+        return coll;
+    }
+
+    private static Set<String> add(Set<String> coll, String value) {
+        if (CollectionUtils.isEmpty(coll)) {
+            coll = new HashSet<>();
+        }
+
+        coll.add(value);
+
+        return coll;
+    }
+
     private void preprocessPolicyItems(List<? extends RangerPolicy.RangerPolicyItem> policyItems) {
-        if(CollectionUtils.isNotEmpty(policyItems)) {
-	        for (RangerPolicy.RangerPolicyItem item : policyItems) {
-	            delegateAdmin = delegateAdmin || item.getDelegateAdmin();
+        if (CollectionUtils.isNotEmpty(policyItems)) {
+            for (RangerPolicy.RangerPolicyItem item : policyItems) {
+                delegateAdmin = delegateAdmin || item.getDelegateAdmin();
 
-	            List<RangerPolicy.RangerPolicyItemAccess> policyItemAccesses = item.getAccesses();
-	            for(RangerPolicy.RangerPolicyItemAccess policyItemAccess : policyItemAccesses) {
+                List<RangerPolicy.RangerPolicyItemAccess> policyItemAccesses = item.getAccesses();
 
-	                if (policyItemAccess.getIsAllowed()) {
-	                    String accessType = policyItemAccess.getType();
-	                    accessPerms.add(accessType);
-	                }
-	            }
+                for (RangerPolicy.RangerPolicyItemAccess policyItemAccess : policyItemAccesses) {
+                    if (policyItemAccess.getIsAllowed()) {
+                        accessPerms = add(accessPerms, policyItemAccess.getType());
+                    }
+                }
 
-	            roles.addAll(item.getRoles());
-	            groups.addAll(item.getGroups());
-	            users.addAll(item.getUsers());
-
-	        }
+                roles  = addAll(roles, item.getRoles());
+                groups = addAll(groups, item.getGroups());
+                users  = addAll(users, item.getUsers());
+            }
         }
     }
 
-	private boolean checkIfHasAllPerms() {
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("==> RangerOptimizedPolicyEvaluator.checkIfHasAllPerms()");
-        }
+    private boolean checkIfHasAllPerms() {
+        LOG.debug("==> RangerOptimizedPolicyEvaluator.checkIfHasAllPerms()");
+
         boolean result = true;
 
         if (getPolicy().getIsDenyAllElse()) {
@@ -371,16 +349,14 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
             }
         }
 
-        if(LOG.isDebugEnabled()) {
-            LOG.debug("==> RangerOptimizedPolicyEvaluator.checkIfHasAllPerms(), " + result);
-        }
+        LOG.debug("==> RangerOptimizedPolicyEvaluator.checkIfHasAllPerms(), {}", result);
 
         return result;
     }
 
     private boolean checkIfAllEvaluatorsInitialized() {
         if (!hasAllEvaluatorsInitialized) {
-            hasAllEvaluatorsInitialized = checkIfWithImpliedGrantsInitialized (getAllowEvaluators()) &&
+            hasAllEvaluatorsInitialized = checkIfWithImpliedGrantsInitialized(getAllowEvaluators()) &&
                     checkIfWithImpliedGrantsInitialized(getAllowExceptionEvaluators()) &&
                     checkIfWithImpliedGrantsInitialized(getDenyEvaluators()) &&
                     checkIfWithImpliedGrantsInitialized(getDenyExceptionEvaluators()) &&
@@ -392,13 +368,17 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
 
     private boolean checkIfWithImpliedGrantsInitialized(List<? extends RangerPolicyItemEvaluator> evaluators) {
         boolean ret = true;
-        for (RangerPolicyItemEvaluator evaluator: evaluators) {
+        for (RangerPolicyItemEvaluator evaluator : evaluators) {
             if (evaluator.getWithImpliedGrants() == null) {
                 ret = false;
                 break;
             } else {
                 for (RangerPolicy.RangerPolicyItemAccess access : evaluator.getWithImpliedGrants().getAccesses()) {
                     if (access.getIsAllowed()) {
+                        if (CollectionUtils.isEmpty(accessPerms)) {
+                            accessPerms = new HashSet<>();
+                        }
+
                         accessPerms.add(access.getType());
                     }
                 }
@@ -407,4 +387,33 @@ public class RangerOptimizedPolicyEvaluator extends RangerDefaultPolicyEvaluator
         return ret;
     }
 
+    static class LevelResourceNames implements Comparable<LevelResourceNames> {
+        final int                               level;
+        final RangerPolicy.RangerPolicyResource policyResource;
+
+        public LevelResourceNames(int level, RangerPolicy.RangerPolicyResource policyResource) {
+            this.level          = level;
+            this.policyResource = policyResource;
+        }
+
+        @Override
+        public int compareTo(LevelResourceNames other) {
+            // Sort in ascending order of level numbers
+            return Integer.compare(this.level, other.level);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(this.level);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            boolean ret = false;
+            if (other instanceof LevelResourceNames) {
+                ret = this == other || compareTo((LevelResourceNames) other) == 0;
+            }
+            return ret;
+        }
+    }
 }

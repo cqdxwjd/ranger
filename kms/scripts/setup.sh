@@ -66,8 +66,10 @@ get_prop_or_default() {
 }
 
 PYTHON_COMMAND_INVOKER=$(get_prop 'PYTHON_COMMAND_INVOKER' $PROPFILE)
+
 DB_FLAVOR=$(get_prop 'DB_FLAVOR' $PROPFILE)
 SQL_CONNECTOR_JAR=$(get_prop 'SQL_CONNECTOR_JAR' $PROPFILE)
+CONNECTION_STRING_ADDITIONAL_PARAMS=$(get_prop 'CONNECTION_STRING_ADDITIONAL_PARAMS' $PROPFILE)
 db_root_user=$(get_prop 'db_root_user' $PROPFILE)
 db_root_password=$(get_prop 'db_root_password' $PROPFILE)
 db_host=$(get_prop 'db_host' $PROPFILE)
@@ -133,6 +135,12 @@ AZURE_MASTER_KEY_TYPE=$(get_prop 'AZURE_MASTER_KEY_TYPE' $PROPFILE)
 ZONE_KEY_ENCRYPTION_ALGO=$(get_prop 'ZONE_KEY_ENCRYPTION_ALGO' $PROPFILE)
 AZURE_KEYVAULT_URL=$(get_prop 'AZURE_KEYVAULT_URL' $PROPFILE)
 
+AWS_KMS_ENABLED=$(get_prop 'AWS_KMS_ENABLED' $PROPFILE)
+AWS_KMS_MASTERKEY_ID=$(get_prop 'AWS_KMS_MASTERKEY_ID' $PROPFILE)
+AWS_CLIENT_ACCESSKEY=$(get_prop 'AWS_CLIENT_ACCESSKEY' $PROPFILE)
+AWS_CLIENT_SECRETKEY=$(get_prop 'AWS_CLIENT_SECRETKEY' $PROPFILE)
+AWS_CLIENT_REGION=$(get_prop 'AWS_CLIENT_REGION' $PROPFILE)
+
 IS_GCP_ENABLED=$(get_prop 'IS_GCP_ENABLED' $PROPFILE)
 GCP_KEYRING_ID=$(get_prop 'GCP_KEYRING_ID' $PROPFILE)
 GCP_CRED_JSON_FILE=$(get_prop 'GCP_CRED_JSON_FILE' $PROPFILE)
@@ -186,9 +194,11 @@ get_distro(){
 	log "[I] Checking distribution name.."
 	ver=$(cat /etc/*{issues,release,version} 2> /dev/null)
 	if [[ $(echo $ver | grep DISTRIB_ID) ]]; then
-	    DIST_NAME=$(lsb_release -si)
+	  DIST_NAME=$(lsb_release -si)
+	elif [[ $(echo $ver | grep -E '^NAME=' | cut -d'"' -f2) ]]; then
+	  DIST_NAME=$(echo $ver | grep -E '^NAME=' | cut -d'"' -f2)
 	else
-	    DIST_NAME=$(echo $ver | cut -d ' ' -f 1 | sort -u | head -1)
+	  DIST_NAME=$(echo $ver | cut -d ' ' -f 1 | sort -u | head -1)
 	fi
 	export $DIST_NAME
 	log "[I] Found distribution : $DIST_NAME"
@@ -597,7 +607,12 @@ update_properties() {
 	if [ "${DB_FLAVOR}" == "MSSQL" ]
 	then
 		propertyName=ranger.ks.jpa.jdbc.url
-		newPropertyValue="jdbc:sqlserver://${DB_HOST};databaseName=${db_name}"
+    		if [ "${CONNECTION_STRING_ADDITIONAL_PARAMS}" != "" ]
+      		then
+			newPropertyValue="jdbc:sqlserver://${DB_HOST};databaseName=${db_name};${CONNECTION_STRING_ADDITIONAL_PARAMS}"
+   		else
+     			newPropertyValue="jdbc:sqlserver://${DB_HOST};databaseName=${db_name}"
+		fi
 		updatePropertyToFilePy $propertyName $newPropertyValue $to_file
 
 		propertyName=ranger.ks.jpa.jdbc.dialect
@@ -646,6 +661,9 @@ update_properties() {
 	AZURE_CLIENT_SEC="ranger.kms.azure.client.secret"
 	AZURE_CLIENT_SECRET_ALIAS="ranger.ks.azure.client.secret"
 
+	AWS_CLIENT_SEC="ranger.kms.aws.client.secretkey"
+	AWS_CLIENT_SECRET_ALIAS="ranger.ks.aws.client.secretkey"
+
 	TENCENT_CLIENT_SEC="ranger.kms.tencent.client.secret"
 	TENCENT_CLIENT_SECRET_ALIAS="ranger.ks.tencent.client.secret"
 
@@ -653,6 +671,7 @@ update_properties() {
         HSM_ENABLED=`echo $HSM_ENABLED | tr '[:lower:]' '[:upper:]'`
         KEYSECURE_ENABLED=`echo $KEYSECURE_ENABLED | tr '[:lower:]' '[:upper:]'`
 	AZURE_KEYVAULT_ENABLED=`echo $AZURE_KEYVAULT_ENABLED | tr '[:lower:]' '[:upper:]'`
+	AWS_KMS_ENABLED=`echo $AWS_KMS_ENABLED | tr '[:lower:]' '[:upper:]'`
 	IS_GCP_ENABLED=`echo $IS_GCP_ENABLED | tr '[:lower:]' '[:upper:]'`
 	TENCENT_KMS_ENABLED=`echo $TENCENT_KMS_ENABLED | tr '[:lower:]' '[:upper:]'`
 
@@ -708,6 +727,21 @@ update_properties() {
                         updatePropertyToFilePy $propertyName $newPropertyValue $to_file
                 fi
 
+    # if $AWS_CLIENT_ACCESSKEY is set, then $AWS_CLIENT_SECRETKEY must be set
+		if [ "$AWS_KMS_ENABLED" == "TRUE" -a -n "$AWS_CLIENT_ACCESSKEY" ]
+		then
+                        checkIfEmpty "$AWS_CLIENT_SECRETKEY" "AWS Client SecretKey"
+                        $PYTHON_COMMAND_INVOKER ranger_credential_helper.py -l "cred/lib/*" -f "$keystore" -k "${AWS_CLIENT_SECRET_ALIAS}" -v "${AWS_CLIENT_SECRETKEY}" -c 1
+
+                        propertyName=ranger.kms.aws.client.secretkey.alias
+                        newPropertyValue="${AWS_CLIENT_SECRET_ALIAS}"
+                        updatePropertyToFilePy $propertyName $newPropertyValue $to_file
+
+                        propertyName=ranger.kms.aws.client.secretkey
+                        newPropertyValue="_"
+                        updatePropertyToFilePy $propertyName $newPropertyValue $to_file
+		fi
+
 		if [ "$TENCENT_KMS_ENABLED" == "TRUE" ]
 		then
                         checkIfEmpty "$TENCENT_CLIENT_SECRET" "Tencent Client Secret"
@@ -760,6 +794,10 @@ update_properties() {
 
 		propertyName="${AZURE_CLIENT_SEC}"
                 newPropertyValue="${AZURE_CLIENT_SECRET}"
+                updatePropertyToFilePy $propertyName $newPropertyValue $to_file
+
+		propertyName="${AWS_CLIENT_SEC}"
+                newPropertyValue="${AWS_CLIENT_SECRETKEY}"
                 updatePropertyToFilePy $propertyName $newPropertyValue $to_file
 
 		propertyName="${TENCENT_CLIENT_SEC}"
@@ -917,6 +955,32 @@ update_properties() {
 
         fi
 
+	########### AWS KEY VAULT #################
+
+
+        if [ "${AWS_KMS_ENABLED}" != "TRUE" ]
+        then
+                propertyName=ranger.kms.awskms.enabled
+                newPropertyValue="false"
+                updatePropertyToFilePy $propertyName $newPropertyValue $to_file
+        else
+                propertyName=ranger.kms.awskms.enabled
+                newPropertyValue="true"
+                updatePropertyToFilePy $propertyName $newPropertyValue $to_file
+
+                propertyName=ranger.kms.awskms.masterkey.id
+                newPropertyValue="${AWS_KMS_MASTERKEY_ID}"
+                updatePropertyToFilePy $propertyName $newPropertyValue $to_file
+
+                propertyName=ranger.kms.aws.client.accesskey
+                newPropertyValue="${AWS_CLIENT_ACCESSKEY}"
+                updatePropertyToFilePy $propertyName $newPropertyValue $to_file
+
+                propertyName=ranger.kms.aws.client.region
+                newPropertyValue="${AWS_CLIENT_REGION}"
+                updatePropertyToFilePy $propertyName $newPropertyValue $to_file
+        fi
+
 	########### RANGER GCP #################
 		if [ "${IS_GCP_ENABLED}" != "TRUE" ]
 		then
@@ -975,7 +1039,7 @@ update_properties() {
                 newPropertyValue="${TENCENT_CLIENT_ID}"
                 updatePropertyToFilePy $propertyName $newPropertyValue $to_file
 
-                propertyName=ranger.kms.client.region
+                propertyName=ranger.kms.tencent.client.region
                 newPropertyValue="${TENCENT_CLIENT_REGION}"
                 updatePropertyToFilePy $propertyName $newPropertyValue $to_file
 

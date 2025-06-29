@@ -36,10 +36,11 @@ import {
   cloneDeep
 } from "lodash";
 import { RangerPolicyType } from "Utils/XAEnums";
-import { getServiceDef } from "../../utils/appState";
+import { getServiceDef } from "Utils/appState";
+import { selectInputCustomStyles } from "Components/CommonComponents";
 
 export default function TagBasePermissionItem(props) {
-  const serviceDefs = getServiceDef();
+  const serviceDefs = cloneDeep(getServiceDef());
   const {
     options,
     inputVal,
@@ -53,6 +54,14 @@ export default function TagBasePermissionItem(props) {
   const msgStyles = {
     background: "white",
     color: "black"
+  };
+
+  const customStyles = {
+    ...selectInputCustomStyles,
+    noOptionsMessage: (base) => ({
+      ...base,
+      ...msgStyles
+    })
   };
 
   const noOptionMsg = (inputValue) => {
@@ -262,8 +271,8 @@ export default function TagBasePermissionItem(props) {
   const tagAccessTypeDisplayVal = (val) => {
     return val.map((m, index) => {
       return (
-        <h6 className="d-inline mr-1 mb-1" key={index}>
-          <Badge variant="info">{m.serviceName.toUpperCase()}</Badge>
+        <h6 className="d-inline me-1 mb-1" key={index}>
+          <Badge bg="info">{m.serviceName.toUpperCase()}</Badge>
         </h6>
       );
     });
@@ -356,12 +365,7 @@ export default function TagBasePermissionItem(props) {
                         noOptionsMessage={({ inputValue }) =>
                           noOptionMsg(inputValue)
                         }
-                        styles={{
-                          noOptionsMessage: (base) => ({
-                            ...base,
-                            ...msgStyles
-                          })
-                        }}
+                        styles={customStyles}
                         components={{
                           DropdownIndicator: () => null,
                           IndicatorSeparator: () => null
@@ -373,7 +377,7 @@ export default function TagBasePermissionItem(props) {
                     </FormB.Group>
                   )}
                 />
-                <Table striped bordered>
+                <Table bordered>
                   <thead>
                     <tr>
                       <th className="bg-white text-dark  align-middle">
@@ -385,7 +389,7 @@ export default function TagBasePermissionItem(props) {
                               <>
                                 <input
                                   {...input}
-                                  className="mr-1"
+                                  className="me-1"
                                   checked={isSelectAllChecked(
                                     values?.tableList
                                   )}

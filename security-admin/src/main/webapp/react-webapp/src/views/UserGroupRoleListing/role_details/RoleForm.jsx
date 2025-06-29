@@ -20,20 +20,23 @@
 import React, { useEffect, useReducer } from "react";
 import { Button, Form as BForm, Col, Row, Table } from "react-bootstrap";
 import { Form, Field } from "react-final-form";
-import { scrollToError } from "Components/CommonComponents";
+import {
+  scrollToError,
+  BlockUi,
+  Loader,
+  CustomTooltip,
+  selectInputCustomStyles
+} from "Components/CommonComponents";
 import { FieldArray } from "react-final-form-arrays";
 import arrayMutators from "final-form-arrays";
 import AsyncSelect from "react-select/async";
 import { toast } from "react-toastify";
 import { findIndex, isEmpty, filter } from "lodash";
-import { commonBreadcrumb, serverError } from "../../../utils/XAUtils";
-import { Loader, CustomTooltip } from "Components/CommonComponents";
+import { commonBreadcrumb, serverError } from "Utils/XAUtils";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { fetchApi } from "Utils/fetchAPI";
 import usePrompt from "Hooks/usePrompt";
-import { RegexValidation } from "../../../utils/XAEnums";
-import { BlockUi } from "../../../components/CommonComponents";
-import CustomBreadcrumb from "../../CustomBreadcrumb";
+import { RegexValidation } from "Utils/XAEnums";
 
 const initialState = {
   loader: true,
@@ -154,7 +157,7 @@ function RoleForm() {
   const fetchRoleData = async (roleID) => {
     let roleRespData;
     try {
-      const { fetchApi, fetchCSRFConf } = await import("Utils/fetchAPI");
+      const { fetchApi } = await import("Utils/fetchAPI");
       roleRespData = await fetchApi({
         url: "roles/roles/" + roleID
       });
@@ -198,7 +201,7 @@ function RoleForm() {
           type: "SET_BLOCK_UI",
           blockUI: true
         });
-        const userEdit = await fetchApi({
+        await fetchApi({
           url: `roles/roles/${params.roleID}`,
           method: "put",
           data: roleFormData
@@ -223,7 +226,7 @@ function RoleForm() {
           type: "SET_BLOCK_UI",
           blockUI: true
         });
-        const passwdResp = await fetchApi({
+        await fetchApi({
           url: "roles/roles",
           method: "post",
           data: formData
@@ -448,15 +451,13 @@ function RoleForm() {
           render={({
             handleSubmit,
             form: {
-              mutators: { push, pop }
+              mutators: { push }
             },
             form,
             submitting,
             invalid,
             errors,
             values,
-            fields,
-            pristine,
             dirty
           }) => (
             <div className="wrap user-role-grp-form">
@@ -471,11 +472,11 @@ function RoleForm() {
                   {({ input, meta }) => (
                     <Row className="form-group">
                       <Col xs={3}>
-                        <label className="form-label pull-right">
+                        <label className="form-label float-end">
                           Role Name *
                         </label>
                       </Col>
-                      <Col xs={4}>
+                      <Col xs={4} className={"position-relative"}>
                         <input
                           {...input}
                           type="text"
@@ -490,7 +491,7 @@ function RoleForm() {
                           disabled={params.roleID ? true : false}
                           data-cy="name"
                         />
-                        <span className="info-user-role-grp-icon">
+                        <span className="input-box-info-icon">
                           <CustomTooltip
                             placement="right"
                             content={
@@ -520,7 +521,7 @@ function RoleForm() {
                   {({ input }) => (
                     <Row className="form-group">
                       <Col xs={3}>
-                        <label className="form-label pull-right">
+                        <label className="form-label float-end">
                           Description
                         </label>
                       </Col>
@@ -573,7 +574,7 @@ function RoleForm() {
                                       <Field
                                         className="form-control"
                                         name={`${name}.isAdmin`}
-                                        render={({ input, meta }) => (
+                                        render={({ input }) => (
                                           <div>
                                             <BForm.Group>
                                               <BForm.Check
@@ -620,6 +621,7 @@ function RoleForm() {
                             isMulti
                             data-name="usersSelect"
                             data-cy="usersSelect"
+                            styles={selectInputCustomStyles}
                           />
                         </div>
                         <div className="col-sm-3">
@@ -679,7 +681,7 @@ function RoleForm() {
                                       <Field
                                         className="form-control"
                                         name={`${name}.isAdmin`}
-                                        render={({ input, meta }) => (
+                                        render={({ input }) => (
                                           <div>
                                             <BForm.Group>
                                               <BForm.Check
@@ -726,6 +728,7 @@ function RoleForm() {
                             isMulti
                             data-name="groupsSelect"
                             data-cy="groupsSelect"
+                            styles={selectInputCustomStyles}
                           />
                         </div>
                         <div className="col-sm-3">
@@ -785,7 +788,7 @@ function RoleForm() {
                                       <Field
                                         className="form-control"
                                         name={`${name}.isAdmin`}
-                                        render={({ input, meta }) => (
+                                        render={({ input }) => (
                                           <div>
                                             <BForm.Group>
                                               <BForm.Check
@@ -832,6 +835,7 @@ function RoleForm() {
                             isMulti
                             data-name="rolesSelect"
                             data-cy="rolesSelect"
+                            styles={selectInputCustomStyles}
                           />
                         </div>
                         <div className="col-sm-3">

@@ -45,7 +45,9 @@ import {
   toUpper,
   filter,
   isNull,
-  isEmpty
+  isEmpty,
+  cloneDeep,
+  get
 } from "lodash";
 import { getServiceDef } from "../../utils/appState";
 import { pluginStatusColumnInfo } from "../../utils/XAMessages";
@@ -68,7 +70,8 @@ function Plugin_Status() {
   );
   const [resetPage, setResetpage] = useState({ page: null });
   const isKMSRole = isKeyAdmin() || isKMSAuditor();
-  const { allServiceDefs } = getServiceDef();
+  const { allServiceDefs } = cloneDeep(getServiceDef());
+  const [pageCount, setPageCount] = React.useState(0);
 
   useEffect(() => {
     if (servicesAvailable !== null) {
@@ -98,9 +101,11 @@ function Plugin_Status() {
       if (servicesAvailable !== null) {
         let logsResp = [];
         let logs = [];
+        let totalCount = 0;
         const fetchId = ++fetchIdRef.current;
         let params = { ...searchFilterParams };
         if (fetchId === fetchIdRef.current) {
+          params["pageSize"] = pageSize;
           params["startIndex"] = pageIndex * pageSize;
           try {
             logsResp = await fetchApi({
@@ -108,6 +113,7 @@ function Plugin_Status() {
               params: params
             });
             logs = logsResp.data.pluginInfoList;
+            totalCount = logsResp.data.totalCount;
           } catch (error) {
             serverError(error);
             console.error(
@@ -116,6 +122,7 @@ function Plugin_Status() {
           }
           setPluginStatusLogs(logs);
           setEntries(logsResp.data);
+          setPageCount(Math.ceil(totalCount / pageSize));
           setResetpage({ page: gotoPage });
           setLoader(false);
         }
@@ -179,13 +186,13 @@ function Plugin_Status() {
     return setTimeStamp(downloadTime);
   };
 
-  const getActivationTime = (activeTime, lastUdpateTime, columnsName) => {
+  const getActivationTime = (activeTime, lastUpdateTime, columnsName) => {
     if (isUndefined(activeTime) || isNull(activeTime) || activeTime == 0) {
       return <center>--</center>;
     }
-    if (!isUndefined(lastUdpateTime)) {
+    if (!isUndefined(lastUpdateTime)) {
       let activeDate = new Date(parseInt(activeTime));
-      let lastUpdateDate = new Date(parseInt(lastUdpateTime));
+      let lastUpdateDate = new Date(parseInt(lastUpdateTime));
       if (isDateDifferenceMoreThanHr(activeDate, lastUpdateDate)) {
         if (moment(activeDate).diff(moment(lastUpdateDate), "minutes") >= -2) {
           return (
@@ -241,54 +248,152 @@ function Plugin_Status() {
     );
   };
 
+  const dateTimeSorting = (rowA, rowB, colAccessor) => {
+    // Custom comparator function for sorting date-time values
+    const dateA = new Date(parseInt(rowA.original?.info[colAccessor] ?? 0));
+    const dateB = new Date(parseInt(rowB.original?.info[colAccessor] ?? 0));
+
+    // Compare dates
+    if (dateA < dateB) return -1;
+    if (dateA > dateB) return 1;
+    return;
+  };
+
+  const dataSorting = (rowA, rowB, colAccessor) => {
+    const allSame =
+      (get(rowA.original, colAccessor) ?? "") ===
+      (get(rowB.original, colAccessor) ?? "");
+    if (allSame == true) {
+      // If all values are the same, return to disable sorting
+      return;
+    } else {
+      // Otherwise, call the generic sorting function for sorting values
+      return (get(rowA.original, colAccessor) ?? "").localeCompare(
+        get(rowB.original, colAccessor) ?? ""
+      );
+    }
+  };
+
   const columns = React.useMemo(
     () => [
       {
         Header: "Service Name",
         accessor: "serviceDisplayName",
-        sortMethod: (a, b) => {
-          if (a.length === b.length) {
-            return a > b ? 1 : -1;
-          }
-          return a.length > b.length ? 1 : -1;
+        sortType: (rowA, rowB, colAccessor) => {
+          return dataSorting(rowA, rowB, colAccessor);
+        },
+        Cell: (rawValue) => {
+          return (
+            <div className="text-truncate">
+              <span title={rawValue.value}>
+                {!isEmpty(rawValue.value) ? (
+                  rawValue.value
+                ) : (
+                  <center>--</center>
+                )}
+              </span>
+            </div>
+          );
         }
       },
       {
         Header: "Service Type",
         accessor: "serviceType",
+        sortType: (rowA, rowB, colAccessor) => {
+          return dataSorting(rowA, rowB, colAccessor);
+        },
         Cell: (rawValue) => {
           return (
             <div className="text-truncate">
-              <span title={rawValue.value}>{rawValue.value}</span>
+              <span title={rawValue.value}>
+                {!isEmpty(rawValue.value) ? (
+                  rawValue.value
+                ) : (
+                  <center>--</center>
+                )}
+              </span>
             </div>
           );
         }
       },
       {
         Header: "Application",
-        accessor: "appType"
+        accessor: "appType",
+        sortType: (rowA, rowB, colAccessor) => {
+          return dataSorting(rowA, rowB, colAccessor);
+        },
+        Cell: (rawValue) => {
+          return (
+            <div className="text-truncate">
+              <span title={rawValue.value}>
+                {!isEmpty(rawValue.value) ? (
+                  rawValue.value
+                ) : (
+                  <center>--</center>
+                )}
+              </span>
+            </div>
+          );
+        }
       },
       {
         Header: "Host Name",
         accessor: "hostName",
+        sortType: (rowA, rowB, colAccessor) => {
+          return dataSorting(rowA, rowB, colAccessor);
+        },
         Cell: (rawValue) => {
           return (
             <div className="text-truncate">
-              <span title={rawValue.value}>{rawValue.value}</span>
+              <span title={rawValue.value}>
+                {!isEmpty(rawValue.value) ? (
+                  rawValue.value
+                ) : (
+                  <center>--</center>
+                )}
+              </span>
             </div>
           );
         }
       },
       {
         Header: "Plugin IP",
-        accessor: "ipAddress"
+        accessor: "ipAddress",
+        sortType: (rowA, rowB, colAccessor) => {
+          return dataSorting(rowA, rowB, colAccessor);
+        },
+        Cell: (rawValue) => {
+          return (
+            <div className="text-truncate">
+              <span title={rawValue.value}>
+                {!isEmpty(rawValue.value) ? (
+                  rawValue.value
+                ) : (
+                  <center>--</center>
+                )}
+              </span>
+            </div>
+          );
+        }
       },
       {
         Header: "Cluster Name",
-        accessor: "clusterName",
-        Cell: ({ row: { original } }) => {
-          let clusterName = original?.info?.clusterName;
-          return !isEmpty(clusterName) ? clusterName : <center>--</center>;
+        accessor: "info.clusterName",
+        sortType: (rowA, rowB, colAccessor) => {
+          return dataSorting(rowA, rowB, colAccessor);
+        },
+        Cell: (rawValue) => {
+          return (
+            <div className="text-truncate">
+              <span title={rawValue.value}>
+                {!isEmpty(rawValue.value) ? (
+                  rawValue.value
+                ) : (
+                  <center>--</center>
+                )}
+              </span>
+            </div>
+          );
         }
       },
       {
@@ -298,6 +403,9 @@ function Plugin_Status() {
           {
             Header: "Last Update",
             accessor: "lastPolicyUpdateTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getLastUpdateTime(original.info.lastPolicyUpdateTime);
             },
@@ -306,6 +414,9 @@ function Plugin_Status() {
           {
             Header: "Download",
             accessor: "policyDownloadTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getDownloadTime(
                 original.info.policyDownloadTime,
@@ -318,6 +429,9 @@ function Plugin_Status() {
           {
             Header: "Active",
             accessor: "policyActivationTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getActivationTime(
                 original.info.policyActivationTime,
@@ -336,6 +450,9 @@ function Plugin_Status() {
           {
             Header: "Last Update",
             accessor: "lastTagUpdateTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getLastUpdateTime(original.info.lastTagUpdateTime);
             },
@@ -344,7 +461,9 @@ function Plugin_Status() {
           {
             Header: "Download",
             accessor: "tagDownloadTime",
-
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getDownloadTime(
                 original.info.tagDownloadTime,
@@ -357,7 +476,9 @@ function Plugin_Status() {
           {
             Header: "Active",
             accessor: "tagActivationTime",
-
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getActivationTime(
                 original.info.tagActivationTime,
@@ -376,6 +497,9 @@ function Plugin_Status() {
           {
             Header: "Last Update",
             accessor: "lastGdsUpdateTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getLastUpdateTime(original.info.lastGdsUpdateTime);
             },
@@ -384,6 +508,9 @@ function Plugin_Status() {
           {
             Header: "Download",
             accessor: "gdsDownloadTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getDownloadTime(
                 original.info.gdsDownloadTime,
@@ -396,6 +523,9 @@ function Plugin_Status() {
           {
             Header: "Active",
             accessor: "gdsActivationTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getActivationTime(
                 original.info.gdsActivationTime,
@@ -414,6 +544,9 @@ function Plugin_Status() {
           {
             Header: "Last Update",
             accessor: "lastRoleUpdateTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getLastUpdateTime(original.info.lastRoleUpdateTime);
             },
@@ -422,6 +555,9 @@ function Plugin_Status() {
           {
             Header: "Download",
             accessor: "roleDownloadTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getDownloadTime(
                 original.info.roleDownloadTime,
@@ -434,6 +570,9 @@ function Plugin_Status() {
           {
             Header: "Active",
             accessor: "roleActivationTime",
+            sortType: (rowA, rowB, colAccessor) => {
+              return dateTimeSorting(rowA, rowB, colAccessor);
+            },
             Cell: ({ row: { original } }) => {
               return getActivationTime(
                 original.info.roleActivationTime,
@@ -550,22 +689,27 @@ function Plugin_Status() {
             </div>
           </Col>
         </Row>
-        <Row>
-          <Col sm={11}>
-            <AuditFilterEntries entries={entries} refreshTable={refreshTable} />
-          </Col>
-        </Row>
-        <XATableLayout
-          data={pluginStatusListingData}
-          columns={columns}
-          loading={loader}
-          totalCount={entries && entries.totalCount}
-          fetchData={fetchPluginStatusInfo}
-          columnSort={true}
-          clientSideSorting={true}
-          showPagination={false}
-          columnHide={{ tableName: "pluginStatus", isVisible: true }}
-        />
+        <div className="position-relative">
+          <Row>
+            <Col sm={11}>
+              <AuditFilterEntries
+                entries={entries}
+                refreshTable={refreshTable}
+              />
+            </Col>
+          </Row>
+          <XATableLayout
+            data={pluginStatusListingData}
+            columns={columns}
+            loading={loader}
+            totalCount={entries && entries.totalCount}
+            fetchData={fetchPluginStatusInfo}
+            columnSort={true}
+            clientSideSorting={true}
+            pageCount={pageCount}
+            columnHide={{ tableName: "pluginStatus", isVisible: true }}
+          />
+        </div>
       </React.Fragment>
     </div>
   );

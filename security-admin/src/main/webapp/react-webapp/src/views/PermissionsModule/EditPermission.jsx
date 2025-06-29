@@ -28,7 +28,11 @@ import {
 } from "react-bootstrap";
 import React, { useEffect, useReducer, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader } from "Components/CommonComponents";
+import {
+  Loader,
+  BlockUi,
+  selectInputCustomStyles
+} from "Components/CommonComponents";
 import { fetchApi } from "Utils/fetchAPI";
 import AsyncSelect from "react-select/async";
 import { toast } from "react-toastify";
@@ -38,8 +42,7 @@ import {
   CustomInfinteScroll,
   commonBreadcrumb,
   serverError
-} from "../../utils/XAUtils";
-import { BlockUi } from "../../components/CommonComponents";
+} from "Utils/XAUtils";
 
 const initialState = {
   loader: true,
@@ -341,8 +344,7 @@ const EditPermission = () => {
           render={({ handleSubmit, submitting, values }) => (
             <form onSubmit={handleSubmit}>
               <div className="form-horizontal">
-                <header>Module Details:</header>
-                <hr className="zoneheader" />
+                <p className="form-header">Module Details:</p>
 
                 <div>
                   <Field
@@ -354,7 +356,7 @@ const EditPermission = () => {
                         className="mb-3"
                         controlId="moduleName"
                       >
-                        <FormB.Label column sm="3" className="text-right">
+                        <FormB.Label column sm="3" className="text-end">
                           <strong>Module Name *</strong>
                         </FormB.Label>
                         <Col sm="4">
@@ -368,8 +370,7 @@ const EditPermission = () => {
               <br />
               <br />
               <div className="form-horizontal">
-                <header>User and Group Permissions:</header>
-                <hr className="zoneheader" />
+                <p className="form-header">User and Group Permissions:</p>
 
                 <Field
                   className="form-control"
@@ -380,11 +381,11 @@ const EditPermission = () => {
                       className="mb-3"
                       controlId="formPlaintextEmail"
                     >
-                      <FormB.Label className="text-right" column sm="2">
+                      <FormB.Label className="text-end" column sm="2">
                         Permissions
                       </FormB.Label>
                       <Col sm="10">
-                        <Table striped bordered>
+                        <Table bordered>
                           <thead className="table-edit-permission">
                             <tr>
                               <th width="49%">Select and Add Group</th>
@@ -399,7 +400,6 @@ const EditPermission = () => {
                                   name="selectGroups"
                                   render={({ input }) => (
                                     <div>
-                                      {" "}
                                       <AsyncSelect
                                         {...input}
                                         className="edit-perm-select"
@@ -412,12 +412,12 @@ const EditPermission = () => {
                                         }}
                                         isClearable={false}
                                         placeholder="Select Groups"
-                                        width="500px"
                                         isMulti
+                                        styles={selectInputCustomStyles}
                                       />
                                       <Button
                                         size="sm"
-                                        className="ml-2  m-r-sm"
+                                        className="ms-2  m-r-sm"
                                         variant="outline-secondary"
                                         onClick={() => {
                                           if (
@@ -453,19 +453,19 @@ const EditPermission = () => {
                                         defaultOptions
                                         filterOption={filterUsrOp}
                                         loadOptions={fetchUsers}
-                                        isMulti
-                                        width="500px"
                                         components={{
                                           DropdownIndicator: () => null,
                                           IndicatorSeparator: () => null
                                         }}
                                         isClearable={false}
                                         placeholder="Select Users"
+                                        isMulti
+                                        styles={selectInputCustomStyles}
                                       />
 
                                       <Button
                                         size="sm"
-                                        className="ml-2  m-r-sm"
+                                        className="ms-2  m-r-sm"
                                         variant="outline-secondary"
                                         onClick={() => {
                                           if (
@@ -551,11 +551,8 @@ const EditPermission = () => {
                 />
               </div>
 
-              <br />
-              <hr />
-              <div className="text-center">
+              <div className="text-center form-actions">
                 <Button
-                  className="mr-2"
                   type="submit"
                   variant="primary"
                   size="sm"

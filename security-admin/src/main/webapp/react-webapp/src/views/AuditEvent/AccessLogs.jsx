@@ -42,7 +42,8 @@ import {
   has,
   filter,
   find,
-  isArray
+  isArray,
+  cloneDeep
 } from "lodash";
 import { toast } from "react-toastify";
 import qs from "qs";
@@ -62,7 +63,8 @@ import {
 import { CustomTooltip, Loader } from "../../components/CommonComponents";
 import {
   ServiceRequestDataRangerAcl,
-  ServiceRequestDataHadoopAcl
+  ServiceRequestDataHadoopAcl,
+  UserTypes
 } from "../../utils/XAEnums";
 import { getServiceDef } from "../../utils/appState";
 
@@ -99,7 +101,7 @@ function Access() {
   );
   const [resetPage, setResetpage] = useState({ page: 0 });
   const [policyDetails, setPolicyDetails] = useState({});
-  const { allServiceDefs } = getServiceDef();
+  const { allServiceDefs } = cloneDeep(getServiceDef());
 
   useEffect(() => {
     if (!isKMSRole) {
@@ -192,6 +194,7 @@ function Access() {
             logsResp = await fetchApi({
               url: "assets/accessAudit",
               params: params,
+              skipNavigate: true,
               paramsSerializer: function (params) {
                 return qs.stringify(params, { arrayFormat: "repeat" });
               }
@@ -328,9 +331,9 @@ function Access() {
         <Col sm={9} className="popover-span">
           <span>{requestData}</span>
         </Col>
-        <Col sm={3} className="pull-right">
+        <Col sm={3} className="float-end">
           <button
-            className="pull-right link-tag query-icon btn btn-sm"
+            className="float-end link-tag query-icon btn btn-sm"
             size="sm"
             title="Copy"
             onClick={(e) => {
@@ -390,7 +393,7 @@ function Access() {
 
   const queryPopupContent = (rowId, serviceType, requestData) => {
     return (
-      <div className="pull-right">
+      <div className="float-end">
         <div className="queryInfo btn btn-sm link-tag query-icon">
           <CustomPopoverOnClick
             icon="fa-fw fa fa-table"
@@ -493,6 +496,15 @@ function Access() {
       {
         Header: "Application",
         accessor: "agentId",
+        Cell: (rawValue) => {
+          if (!isEmpty(rawValue?.value)) {
+            return (
+              <div className="text-truncate" title={rawValue.value}>
+                {rawValue.value}
+              </div>
+            );
+          } else return "--";
+        },
         width: 100,
         disableResizing: true,
         disableSortBy: true,
@@ -501,7 +513,33 @@ function Access() {
       {
         Header: "User",
         accessor: "requestUser",
+        Cell: (rawValue) => {
+          if (!isEmpty(rawValue?.value)) {
+            return (
+              <div className="text-truncate" title={rawValue.value}>
+                {rawValue.value}
+              </div>
+            );
+          } else return "--";
+        },
         width: 120,
+        disableResizing: true,
+        getResizerProps: () => {}
+      },
+      {
+        Header: "User Source",
+        accessor: "userSource",
+        Cell: (rawValue) => {
+          if (!isEmpty(rawValue?.value)) {
+            const userSourceVal = find(UserTypes, { value: rawValue.value });
+            return (
+              <h6 className="text-center">
+                <Badge bg={userSourceVal.variant}>{userSourceVal.label}</Badge>
+              </h6>
+            );
+          } else return "--";
+        },
+        width: 100,
         disableResizing: true,
         getResizerProps: () => {}
       },
@@ -509,11 +547,14 @@ function Access() {
         Header: "Service (Name / Type)",
         accessor: (s) => (
           <div>
-            <div className="text-left lht-2 mb-1" title={s.repoDisplayName}>
+            <div
+              className="text-start lht-2 mb-1 text-truncate"
+              title={s.repoDisplayName}
+            >
               {s.repoDisplayName}
             </div>
             <div
-              className="bt-1 text-left lht-2 mb-0"
+              className="bt-1 text-start lht-2 mb-0"
               title={s.serviceTypeDisplayName}
             >
               {s.serviceTypeDisplayName}
@@ -535,14 +576,17 @@ function Access() {
           let aclEnforcer = r.row.original.aclEnforcer;
           let requestData = r.row.original.requestData;
 
-          if (!isUndefined(resourcePath)) {
+          if (!isUndefined(resourcePath) || !isUndefined(requestData)) {
             let resourcePathText = isEmpty(resourcePath) ? "--" : resourcePath;
-            let resourceTypeText = isEmpty(resourceType) ? "--" : resourceType;
+            let resourceTypeText =
+              isEmpty(resourceType) || resourceType == "@null"
+                ? "--"
+                : resourceType;
             return (
               <React.Fragment>
                 <div className="clearfix d-flex flex-nowrap m-0">
                   <div
-                    className="pull-left resource-text lht-2 mb-1"
+                    className="float-start resource-text lht-2 mb-1"
                     title={resourcePathText}
                   >
                     {resourcePathText}
@@ -564,7 +608,13 @@ function Access() {
         Header: "Access Type",
         accessor: "accessType",
         Cell: (rawValue) => {
-          return <p className="text-truncate">{rawValue.value}</p>;
+          if (!isEmpty(rawValue?.value)) {
+            return (
+              <div className="text-truncate" title={rawValue.value}>
+                {rawValue.value}
+              </div>
+            );
+          } else return "--";
         },
         width: 130,
         disableResizing: true,
@@ -576,11 +626,7 @@ function Access() {
         Cell: (rawValue) => {
           return (
             <h6>
-              <Badge
-                variant="info"
-                title={rawValue.value}
-                className="text-truncate mw-100"
-              >
+              <Badge bg="info" title={rawValue.value} className="text-truncate">
                 {rawValue.value}
               </Badge>
             </h6>
@@ -597,13 +643,13 @@ function Access() {
           if (rawValue.value == 1) {
             return (
               <h6>
-                <Badge variant="success">Allowed</Badge>
+                <Badge bg="success">Allowed</Badge>
               </h6>
             );
           } else
             return (
               <h6>
-                <Badge variant="danger">Denied</Badge>
+                <Badge bg="danger">Denied</Badge>
               </h6>
             );
         },
@@ -615,6 +661,15 @@ function Access() {
       {
         Header: "Access Enforcer",
         accessor: "aclEnforcer",
+        Cell: (rawValue) => {
+          if (!isEmpty(rawValue?.value)) {
+            return (
+              <div className="text-truncate" title={rawValue.value}>
+                {rawValue.value}
+              </div>
+            );
+          } else return "--";
+        },
         width: 120,
         disableResizing: true,
         getResizerProps: () => {}
@@ -623,7 +678,7 @@ function Access() {
         Header: "Agent Host Name",
         accessor: "agentHost",
         Cell: (rawValue) => {
-          if (!isUndefined(rawValue.value) || !isEmpty(rawValue.value)) {
+          if (!isEmpty(rawValue?.value)) {
             return (
               <div className="text-truncate" title={rawValue.value}>
                 {rawValue.value}
@@ -639,6 +694,15 @@ function Access() {
       {
         Header: "Client IP",
         accessor: "clientIP",
+        Cell: (rawValue) => {
+          if (!isEmpty(rawValue?.value)) {
+            return (
+              <div className="text-truncate" title={rawValue.value}>
+                {rawValue.value}
+              </div>
+            );
+          } else return "--";
+        },
         width: 110,
         disableResizing: true,
         getResizerProps: () => {}
@@ -649,16 +713,31 @@ function Access() {
         width: 100,
         disableResizing: true,
         disableSortBy: true,
+        Cell: (rawValue) => {
+          if (!isEmpty(rawValue?.value)) {
+            return (
+              <div className="text-truncate" title={rawValue.value}>
+                {rawValue.value}
+              </div>
+            );
+          } else {
+            return <div className="text-center">--</div>;
+          }
+        },
         getResizerProps: () => {}
       },
       {
         Header: "Zone Name",
         accessor: "zoneName",
         Cell: (rawValue) => {
-          if (!isUndefined(rawValue.value) || !isEmpty(rawValue.value)) {
+          if (!isEmpty(rawValue?.value)) {
             return (
               <h6>
-                <Badge variant="dark" className="text-truncate mw-100">
+                <Badge
+                  bg="dark"
+                  className="text-truncate"
+                  title={rawValue.value}
+                >
                   {rawValue.value}
                 </Badge>
               </h6>
@@ -943,6 +1022,19 @@ function Access() {
       type: "text"
     },
     {
+      category: "userSource",
+      label: "User Source",
+      urlLabel: "userSource",
+      type: "textoptions",
+      options: () => {
+        return [
+          { value: "0", label: "Internal" },
+          { value: "1", label: "External" },
+          { value: "6", label: "Federated" }
+        ];
+      }
+    },
+    {
       category: "zoneName",
       label: "Zone Name",
       urlLabel: "zoneName",
@@ -1011,40 +1103,45 @@ function Access() {
             </div>
           </Col>
         </Row>
-        <Row className="mb-2">
-          <Col sm={2}>
-            <span>Exclude Service Users: </span>
-            <input
-              type="checkbox"
-              className="align-middle"
-              checked={checked}
-              onChange={toggleChange}
-              data-id="serviceUsersExclude"
-              data-cy="serviceUsersExclude"
-            />
-          </Col>
-          <Col sm={9}>
-            <AuditFilterEntries entries={entries} refreshTable={refreshTable} />
-          </Col>
-        </Row>
-        <XATableLayout
-          data={accessListingData}
-          columns={columns}
-          fetchData={fetchAccessLogsInfo}
-          totalCount={entries && entries.totalCount}
-          loading={loader}
-          pageCount={pageCount}
-          getRowProps={(row) => ({
-            onClick: (e) => {
-              e.stopPropagation();
-              rowModal(row);
-            }
-          })}
-          columnHide={{ tableName: "bigData", isVisible: true }}
-          columnResizable={true}
-          columnSort={true}
-          defaultSort={getDefaultSort}
-        />
+        <div className="position-relative">
+          <Row className="mb-2">
+            <Col sm={2}>
+              <span>Exclude Service Users: </span>
+              <input
+                type="checkbox"
+                className="align-middle"
+                checked={checked}
+                onChange={toggleChange}
+                data-id="serviceUsersExclude"
+                data-cy="serviceUsersExclude"
+              />
+            </Col>
+            <Col sm={9}>
+              <AuditFilterEntries
+                entries={entries}
+                refreshTable={refreshTable}
+              />
+            </Col>
+          </Row>
+          <XATableLayout
+            data={accessListingData}
+            columns={columns}
+            fetchData={fetchAccessLogsInfo}
+            totalCount={entries && entries.totalCount}
+            loading={loader}
+            pageCount={pageCount}
+            getRowProps={(row) => ({
+              onClick: (e) => {
+                e.stopPropagation();
+                rowModal(row);
+              }
+            })}
+            columnHide={{ tableName: "bigData", isVisible: true }}
+            columnResizable={true}
+            columnSort={true}
+            defaultSort={getDefaultSort}
+          />
+        </div>
         <Modal show={showrowmodal} size="lg" onHide={handleClose}>
           <Modal.Header closeButton>
             <Modal.Title>
@@ -1058,12 +1155,12 @@ function Access() {
                     pathname: `/reports/audit/eventlog/${rowdata.eventId}`
                   }}
                 >
-                  <i className="fa-fw fa fa-external-link pull-right text-info"></i>
+                  <i className="fa-fw fa fa-external-link float-end text-info"></i>
                 </Link>
               </h4>
             </Modal.Title>
           </Modal.Header>
-          <Modal.Body className="overflow-auto p-3 mb-3 mb-md-0 mr-md-3">
+          <Modal.Body className="overflow-auto p-3 mb-3 mb-md-0 me-md-3">
             <AccessLogsTable data={rowdata}></AccessLogsTable>
           </Modal.Body>
           <Modal.Footer>

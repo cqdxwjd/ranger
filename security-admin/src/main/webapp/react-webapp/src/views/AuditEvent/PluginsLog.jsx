@@ -34,7 +34,8 @@ import {
   parseSearchFilter,
   serverError,
   isKeyAdmin,
-  isKMSAuditor
+  isKMSAuditor,
+  currentTimeZone
 } from "../../utils/XAUtils";
 import { Loader } from "../../components/CommonComponents";
 
@@ -107,7 +108,8 @@ function Plugins() {
         try {
           logsResp = await fetchApi({
             url: "assets/exportAudit",
-            params: params
+            params: params,
+            skipNavigate: true
           });
           logs = logsResp.data.vXPolicyExportAudits;
           totalCount = logsResp.data.totalCount;
@@ -134,7 +136,7 @@ function Plugins() {
   const columns = React.useMemo(
     () => [
       {
-        Header: "Export Date ( India Standard Time )",
+        Header: `Export Date  ( ${currentTimeZone()} )`,
         accessor: "createDate",
         Cell: (rawValue) => {
           const formatDateTime = dateFormat(
@@ -220,7 +222,7 @@ function Plugins() {
         Cell: (rawValue) => {
           return (
             <span className="text-center d-block">
-              <Badge variant="success">{rawValue.value}</Badge>
+              <Badge bg="success">{rawValue.value}</Badge>
             </span>
           );
         },

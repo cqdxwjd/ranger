@@ -31,8 +31,9 @@ import { find, findIndex, isArray, isEmpty, sortBy } from "lodash";
 import { isObject } from "Utils/XAUtils";
 import CreatableSelect from "react-select/creatable";
 import Select from "react-select";
-import { InfoIcon } from "../utils/XAUtils";
-import { RegexMessage } from "../utils/XAMessages";
+import { InfoIcon } from "Utils/XAUtils";
+import { RegexMessage } from "Utils/XAMessages";
+import { selectInputCustomStyles } from "Components/CommonComponents";
 
 const esprima = require("esprima");
 const TYPE_SELECT = "select";
@@ -298,9 +299,10 @@ const CustomCondition = (props) => {
                         selectedInputVal == "" ? null : selectedInputVal
                       }
                       onChange={(e) => handleChange(e, m.name)}
-                      placeholder="enter expression"
+                      placeholder=""
                       width="500px"
                       isClearable={false}
+                      styles={selectInputCustomStyles}
                     />
                   </Form.Group>
                 </div>
@@ -404,7 +406,7 @@ const Editable = (props) => {
     const policyConditionDisplayValue = () => {
       let ipRangVal, uiHintVal;
       if (selectVal) {
-        return sortBy(Object.keys(selectVal)).map((property, index) => {
+        return sortBy(Object.keys(selectVal)).map((property) => {
           let conditionObj = find(conditionDefVal, function (m) {
             if (m.name == property) {
               return m;
@@ -424,7 +426,7 @@ const Editable = (props) => {
             <div
               key={property}
               className={`${
-                uiHintVal?.isMultiline ? "editable-label" : "badge badge-dark"
+                uiHintVal?.isMultiline ? "editable-label" : "badge bg-dark"
               }`}
             >
               {`${conditionObj.label}: ${
@@ -449,7 +451,7 @@ const Editable = (props) => {
                   })
                   .join(", ");
           val = (
-            <h6 className="d-inline mr-1">
+            <h6 className="d-inline me-1">
               <span
                 className="editable-edit-text badge bg-dark"
                 style={{ display: "block" }}
@@ -488,8 +490,8 @@ const Editable = (props) => {
             <>
               <span className="editable-edit-text">
                 {selectVal.map((op, index) => (
-                  <h6 className="d-inline mr-1" key={index}>
-                    <Badge variant="info">{op.label}</Badge>
+                  <h6 className="d-inline me-1" key={index}>
+                    <Badge bg="info">{op.label}</Badge>
                   </h6>
                 ))}
               </span>
@@ -527,8 +529,8 @@ const Editable = (props) => {
           selectVal && selectVal !== "" ? (
             <>
               <span className="editable-edit-text">
-                <h6 className="d-inline mr-1">
-                  <Badge variant="info">{selectVal}</Badge>
+                <h6 className="d-inline me-1">
+                  <Badge bg="info">{selectVal}</Badge>
                 </h6>
               </span>
               <Button
@@ -558,8 +560,8 @@ const Editable = (props) => {
           selectVal && selectVal?.label ? (
             <>
               <span className="editable-edit-text">
-                <h6 className="d-inline mr-1">
-                  <Badge variant="info">{selectVal.label}</Badge>
+                <h6 className="d-inline me-1">
+                  <Badge bg="info">{selectVal.label}</Badge>
                 </h6>
               </span>
               <Button
@@ -647,7 +649,7 @@ const Editable = (props) => {
       : (selectValRef.current = editableValue);
   }, [editableValue]);
 
-  const handleApply = (e) => {
+  const handleApply = () => {
     let errors, uiHintVal;
     if (selectValRef?.current) {
       sortBy(Object.keys(selectValRef.current)).map((property) => {
@@ -664,9 +666,7 @@ const Editable = (props) => {
             selectValRef.current[conditionObj.name] != undefined
           ) {
             try {
-              let t = esprima.parseScript(
-                selectValRef.current[conditionObj.name]
-              );
+              esprima.parseScript(selectValRef.current[conditionObj.name]);
             } catch (e) {
               errors = e.message;
             }
@@ -704,10 +704,10 @@ const Editable = (props) => {
         type === TYPE_CHECKBOX && "popover-maxHeight popover-minHeight"
       }`}
     >
-      <Popover.Title>
+      <Popover.Header>
         {type === TYPE_CHECKBOX ? "Select" : "Enter"}
-      </Popover.Title>
-      <Popover.Content>
+      </Popover.Header>
+      <Popover.Body>
         {type === TYPE_CHECKBOX ? (
           <CheckboxComp
             value={value}
@@ -729,13 +729,13 @@ const Editable = (props) => {
             validExpression={validExpression}
           />
         ) : null}
-      </Popover.Content>
+      </Popover.Body>
       <div className="popover-footer-buttons">
         <Button
           variant="success"
           size="sm"
           onClick={handleApply}
-          className="mr-2 btn-mini ml-2"
+          className="me-2 btn-mini ms-2"
         >
           <i className="fa fa-fw fa-check"></i>
         </Button>
