@@ -6,7 +6,9 @@ services:
       dockerfile: Dockerfile.ranger-build
       platforms:
         - linux/amd64
-    image: ranger-build
+      args:
+        - RANGER_VERSION=${RANGER_VERSION}
+    image: ranger-build:${RANGER_VERSION}
     container_name: ranger-build
     hostname: ranger-build.example.com
     networks:
