@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ranger-build
+      platforms:
+        - linux/amd64
     image: ranger-build
     container_name: ranger-build
     hostname: ranger-build.example.com

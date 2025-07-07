@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ranger-base:latest
+ARG RANGER_VERSION
+FROM hub.hmf.xyz/emr/ranger-base:${RANGER_VERSION}
 
 ARG HADOOP_VERSION
 ARG RANGER_VERSION
-
 
 COPY ./dist/version                                     /home/ranger/dist/
 COPY ./dist/ranger-${RANGER_VERSION}-hdfs-plugin.tar.gz /home/ranger/dist/

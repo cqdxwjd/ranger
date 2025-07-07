@@ -7,6 +7,8 @@ services:
       args:
         - RANGER_VERSION=${RANGER_VERSION}
         - RANGER_DB_TYPE=${RANGER_DB_TYPE}
+      platforms:
+        - linux/amd64
     image: ranger:latest
     container_name: ranger
     hostname: ranger.example.com
