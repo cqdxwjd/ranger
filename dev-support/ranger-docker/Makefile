@@ -1,5 +1,6 @@
 RANGER_VERSION=2.4.0
 HADOOP_VERSION=3.3.6
+SOLR_VERSION=8
 
 ranger-base:
 	docker buildx build \
@@ -15,3 +16,10 @@ ranger-hadoop:
 		--platform linux/amd64 \
 		-f Dockerfile.ranger-hadoop .
 	docker push hub.hmf.xyz/emr/ranger-hadoop:${HADOOP_VERSION}
+
+ranger-solr:
+	docker buildx build \
+		-t hub.hmf.xyz/emr/ranger-solr:${SOLR_VERSION} \
+		--platform linux/amd64 \
+		-f Dockerfile.ranger-solr .
+	docker push hub.hmf.xyz/emr/ranger-solr:${SOLR_VERSION}
