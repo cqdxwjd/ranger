@@ -50,6 +50,7 @@
         <unpack>false</unpack>
         <includes>
           <include>commons-cli:commons-cli</include>
+          <include>org.apache.hadoop.thirdparty:hadoop-shaded-guava</include>
           <include>commons-collections:commons-collections</include>
           <include>org.apache.commons:commons-configuration2:jar:${commons.configuration.version}</include>
           <include>org.apache.commons:commons-lang3:jar:${commons.lang3.version}</include>
