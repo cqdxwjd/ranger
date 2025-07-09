@@ -14,8 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ARG RANGER_DB_TYPE
+ARG RANGER_VERSION
 
-FROM ranger-base:latest AS ranger
+FROM ranger-base:${RANGER_VERSION} AS ranger
 
 ARG RANGER_VERSION
 ARG RANGER_DB_TYPE
