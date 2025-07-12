@@ -15,7 +15,7 @@
 # limitations under the License.
 
 ARG RANGER_VERSION
-FROM ranger-base:${RANGER_VERSION}
+FROM hub.hmf.xyz/emr/ranger-base:${RANGER_VERSION}
 
 ARG HADOOP_VERSION
 ARG RANGER_VERSION
