@@ -80,4 +80,8 @@
 			RangerRestClient read Timeout in Milli Seconds
 		</description>
 	</property>
+	<property>
+		<name>ranger.add-yarn-authorization</name>
+		<value>false</value>
+	</property>
 </configuration>
