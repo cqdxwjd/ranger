@@ -498,6 +498,21 @@
                 <module>ranger-yarn-plugin-shim</module>
             </modules>
         </profile>
+        <profile>
+            <id>ranger-yarn-plugin-single</id>
+            <modules>
+                <module>agents-audit</module>
+                <module>agents-common</module>
+                <module>agents-cred</module>
+                <module>agents-installer</module>
+                <module>credentialbuilder</module>
+                <module>ranger-plugin-classloader</module>
+                <module>ranger-util</module>
+                <module>plugin-yarn</module>
+                <module>ranger-yarn-plugin-shim</module>
+                <module>distro</module>
+            </modules>
+        </profile>
     <profile>
             <id>ranger-ozone-plugin</id>
             <modules>
