@@ -443,6 +443,21 @@
             </modules>
         </profile>
         <profile>
+            <id>ranger-hive-plugin-single</id>
+            <modules>
+                <module>agents-audit</module>
+                <module>agents-common</module>
+                <module>agents-cred</module>
+                <module>agents-installer</module>
+                <module>credentialbuilder</module>
+                <module>ranger-plugin-classloader</module>
+                <module>ranger-util</module>
+                <module>hive-agent</module>
+                <module>ranger-hive-plugin-shim</module>
+                <module>distro</module>
+            </modules>
+        </profile>
+        <profile>
             <id>ranger-hbase-plugin</id>
             <modules>
                 <module>agents-audit</module>
