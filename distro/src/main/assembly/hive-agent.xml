@@ -54,6 +54,7 @@
         <fileMode>644</fileMode>
         <includes>
           <include>org.eclipse.jetty:jetty-client:jar:${jetty-client.version}</include>
+          <include>org.codehaus.jackson:jackson-jaxrs</include>
           <include>org.apache.httpcomponents:httpmime:jar:${httpcomponents.httpmime.version}</include>
           <include>org.apache.httpcomponents:httpclient:jar:${httpcomponents.httpclient.version}</include>
           <include>org.apache.httpcomponents:httpcore:jar:${httpcomponents.httpcore.version}</include>
@@ -104,7 +105,6 @@
           <include>org.apache.hadoop:hadoop-auth:jar:${hadoop.version}</include>
           <include>org.apache.htrace:htrace-core4</include>
           <include>org.codehaus.woodstox:stax2-api</include>
-          <include>org.codehaus.jackson:jackson-jaxrs</include>
           <include>com.fasterxml.woodstox:woodstox-core</include>
         </includes>
       </binaries>
