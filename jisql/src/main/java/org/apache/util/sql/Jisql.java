@@ -224,7 +224,7 @@ public class Jisql {
     private static final String msqlDriverName = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
     private static final String pointbaseDriverName = "com.pointbase.jdbc.jdbcUniversalDriver";
     private static final String postgresqlDriverName = "org.postgresql.Driver";
-    private static final String mySQLConnectJDriverName = "com.mysql.jdbc.Driver";
+    private static final String mySQLConnectJDriverName = "org.mariadb.jdbc.Driver";
     private static final String mySQLCauchoDriverName = "com.caucho.jdbc.mysql.Driver";
 
     private static final String defaultFormatterClassName = "org.apache.util.outputformatter.DefaultFormatter";
@@ -291,7 +291,7 @@ public class Jisql {
                 printDriverInfo();
             }
             else {
-            	if(connectString.toLowerCase().startsWith("jdbc:mysql") && inputFileName!=null){
+            	if(connectString.toLowerCase().startsWith("jdbc:mariadb") && inputFileName!=null){
             		MySQLPLRunner scriptRunner = new MySQLPLRunner(connection, false, true,printDebug);
             		scriptRunner.setDelimiter(commandTerminator,false);
             		FileReader reader = new FileReader(inputFileName);
