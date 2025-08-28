@@ -621,7 +621,7 @@ update_properties() {
 	if [ "${DB_FLAVOR}" == "MYSQL" ]
 	then
 		propertyName=ranger.jpa.jdbc.url
-		newPropertyValue="jdbc:log4jdbc:mysql://${DB_HOST}/${db_name}"
+		newPropertyValue="jdbc:log4jdbc:mariadb://${DB_HOST}/${db_name}"
 		updatePropertyToFilePy $propertyName $newPropertyValue $to_file_ranger
 
 		propertyName=ranger.jpa.jdbc.dialect
