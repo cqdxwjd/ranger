@@ -1653,6 +1653,16 @@ change_default_users_password(){
 		fi
 	fi
 }
+
+download_keytabs_from_file() {
+  if ! python2 /scripts/python/dsp_client/dsp-client.py --keytab-dir /opt/ranger/admin/keytabs \
+    get-keytab-from-file --conf-file /etc/kerberos/accounts.json; then
+    error_log "keytab files download failed."
+    exit 1
+  fi
+  chmod 755 /opt/ranger/admin/keytabs
+}
+
 log " --------- Running Ranger PolicyManager Web Application Install Script --------- "
 log "[I] uname=`uname`"
 log "[I] hostname=`hostname`"
@@ -1705,4 +1715,5 @@ then
 else
 	exit 1
 fi
+download_keytabs_from_file
 echo "Installation of Ranger PolicyManager Web Application is completed."

@@ -8,6 +8,7 @@ ranger-base:
 		-t hub.hmf.xyz/emr/ranger-base:${RANGER_VERSION} \
 		--platform linux/amd64 \
 		-f Dockerfile.ranger-base .
+	docker push hub.hmf.xyz/emr/ranger-base:${RANGER_VERSION}
 
 ranger-hadoop:
 	docker buildx build \

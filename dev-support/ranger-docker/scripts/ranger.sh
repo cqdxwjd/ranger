@@ -39,7 +39,7 @@ then
   sleep 30
   python3 ${RANGER_SCRIPTS}/create-ranger-services.py
 fi
-
+sed -i "s/_HOST/`hostname`/g" /opt/ranger/admin/conf/ranger-admin-site.xml
 RANGER_ADMIN_PID=`ps -ef  | grep -v grep | grep -i "org.apache.ranger.server.tomcat.EmbeddedServer" | awk '{print $2}'`
 
 # prevent the container from exiting
